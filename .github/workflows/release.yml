@@ -1,0 +1,367 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            binary_suffix: ''
+            archive_type: tar.gz
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            binary_suffix: ''
+            archive_type: tar.gz
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            binary_suffix: .exe
+            archive_type: zip
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            binary_suffix: ''
+            archive_type: tar.gz
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            binary_suffix: ''
+            archive_type: tar.gz
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23'
+
+    # Install system dependencies for Fyne on Ubuntu
+    - name: Install Linux dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc pkg-config libgl1-mesa-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libxxf86vm-dev libasound2-dev
+
+    # Install Xcode Command Line Tools on macOS  
+    - name: Install macOS dependencies
+      if: matrix.os == 'macos-latest'
+      run: |
+        xcode-select --version || xcode-select --install
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-1.23-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-1.23-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Get version
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 1
+      run: |
+        mkdir -p dist
+        BINARY_NAME=shario-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.binary_suffix }}
+        go build -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" -o dist/$BINARY_NAME .
+
+    - name: Create archive
+      run: |
+        cd dist
+        BINARY_NAME=shario-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.binary_suffix }}
+        ARCHIVE_NAME=shario-${{ steps.get_version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}
+        
+        if [ "${{ matrix.archive_type }}" = "zip" ]; then
+          zip -r ${ARCHIVE_NAME}.zip $BINARY_NAME
+        else
+          tar -czf ${ARCHIVE_NAME}.tar.gz $BINARY_NAME
+        fi
+      shell: bash
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: shario-${{ matrix.goos }}-${{ matrix.goarch }}
+        path: dist/shario-${{ steps.get_version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.*
+
+  # Create installers for different platforms
+  create-installers:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: dist/
+
+    - name: Get version
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    # Create DEB package for Ubuntu/Debian
+    - name: Create DEB package
+      run: |
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        VERSION_NUM=${VERSION#v}
+        
+        # Create package structure
+        mkdir -p shario_${VERSION_NUM}/DEBIAN
+        mkdir -p shario_${VERSION_NUM}/usr/bin
+        mkdir -p shario_${VERSION_NUM}/usr/share/applications
+        mkdir -p shario_${VERSION_NUM}/usr/share/pixmaps
+        
+        # Copy binary
+        cp dist/shario-linux-amd64/shario-${VERSION}-linux-amd64.tar.gz .
+        tar -xzf shario-${VERSION}-linux-amd64.tar.gz
+        cp shario-linux-amd64 shario_${VERSION_NUM}/usr/bin/shario
+        chmod +x shario_${VERSION_NUM}/usr/bin/shario
+        
+        # Create desktop entry
+        cat > shario_${VERSION_NUM}/usr/share/applications/shario.desktop << EOF
+        [Desktop Entry]
+        Name=Shario
+        Comment=P2P File Sharing Application
+        Exec=shario
+        Icon=shario
+        Terminal=false
+        Type=Application
+        Categories=Network;FileTransfer;
+        EOF
+        
+        # Create control file
+        cat > shario_${VERSION_NUM}/DEBIAN/control << EOF
+        Package: shario
+        Version: ${VERSION_NUM}
+        Section: net
+        Priority: optional
+        Architecture: amd64
+        Depends: libgl1-mesa-glx, libxcursor1, libxrandr2, libxinerama1, libxi6, libxxf86vm1, libasound2
+        Maintainer: Shario Team <team@shario.dev>
+        Description: P2P File Sharing Application
+         Shario is a cross-platform peer-to-peer file sharing application
+         with real-time chat capabilities. Built with Go, libp2p, and Fyne.
+        EOF
+        
+        # Build package
+        dpkg-deb --build shario_${VERSION_NUM}
+        mv shario_${VERSION_NUM}.deb shario-${VERSION}-linux-amd64.deb
+
+    # Create RPM package for CentOS/RHEL/Fedora
+    - name: Create RPM package
+      run: |
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        VERSION_NUM=${VERSION#v}
+        
+        # Install rpm build tools
+        sudo apt-get update
+        sudo apt-get install -y rpm
+        
+        # Create RPM build structure
+        mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+        
+        # Copy binary to sources
+        cp dist/shario-linux-amd64/shario-${VERSION}-linux-amd64.tar.gz ~/rpmbuild/SOURCES/
+        
+        # Create spec file
+        cat > ~/rpmbuild/SPECS/shario.spec << EOF
+        Name: shario
+        Version: ${VERSION_NUM}
+        Release: 1%{?dist}
+        Summary: P2P File Sharing Application
+        License: MIT
+        URL: https://github.com/yourusername/shario
+        Source0: shario-${VERSION}-linux-amd64.tar.gz
+        
+        BuildRequires: gcc
+        Requires: mesa-libGL libXcursor libXrandr libXinerama libXi libXxf86vm alsa-lib
+        
+        %description
+        Shario is a cross-platform peer-to-peer file sharing application
+        with real-time chat capabilities. Built with Go, libp2p, and Fyne.
+        
+        %prep
+        %setup -q -n .
+        
+        %build
+        # Binary is pre-built
+        
+        %install
+        mkdir -p %{buildroot}/usr/bin
+        mkdir -p %{buildroot}/usr/share/applications
+        cp shario-linux-amd64 %{buildroot}/usr/bin/shario
+        
+        cat > %{buildroot}/usr/share/applications/shario.desktop << 'EOF'
+        [Desktop Entry]
+        Name=Shario
+        Comment=P2P File Sharing Application
+        Exec=shario
+        Icon=shario
+        Terminal=false
+        Type=Application
+        Categories=Network;FileTransfer;
+        EOF
+        
+        %files
+        /usr/bin/shario
+        /usr/share/applications/shario.desktop
+        
+        %changelog
+        * $(date +'%a %b %d %Y') Shario Team <team@shario.dev> - ${VERSION_NUM}-1
+        - Release ${VERSION}
+        EOF
+        
+        # Build RPM
+        cd ~/rpmbuild/SOURCES
+        tar -xzf shario-${VERSION}-linux-amd64.tar.gz
+        rpmbuild -bb ~/rpmbuild/SPECS/shario.spec
+        
+        # Copy result
+        cp ~/rpmbuild/RPMS/x86_64/shario-${VERSION_NUM}-1.*.rpm $GITHUB_WORKSPACE/shario-${VERSION}-linux-amd64.rpm
+
+    # Create macOS DMG
+    - name: Create macOS DMG
+      run: |
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        
+        # For now, just rename the tar.gz as we'd need macOS to create proper DMG
+        cp dist/shario-darwin-amd64/shario-${VERSION}-darwin-amd64.tar.gz shario-${VERSION}-darwin-amd64.tar.gz
+        cp dist/shario-darwin-arm64/shario-${VERSION}-darwin-arm64.tar.gz shario-${VERSION}-darwin-arm64.tar.gz
+
+    - name: Upload installer artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: installers
+        path: |
+          *.deb
+          *.rpm
+          *.tar.gz
+
+  # Create GitHub release
+  release:
+    needs: [build, create-installers]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts/
+
+    - name: Get version
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        
+        # Extract changelog section for this version
+        if [ -f CHANGELOG.md ]; then
+          # Find the section for this version
+          awk "/^## \[${VERSION#v}\]/{p=1} /^## \[.*\]/{if(p && !/^## \[${VERSION#v}\]/) exit} p" CHANGELOG.md > release_notes.md
+          
+          # If no specific version found, use unreleased section
+          if [ ! -s release_notes.md ]; then
+            awk '/^## \[Unreleased\]/{p=1} /^## \[.*\]/{if(p && !/^## \[Unreleased\]/) exit} p' CHANGELOG.md > release_notes.md
+          fi
+          
+          # Clean up the version header
+          sed -i '1d' release_notes.md
+        else
+          echo "Release $VERSION" > release_notes.md
+          echo "" >> release_notes.md
+          echo "Automatic release created by GitHub Actions." >> release_notes.md
+        fi
+        
+        # Add build information
+        echo "" >> release_notes.md
+        echo "## Download" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "### Binaries" >> release_notes.md
+        echo "- **Linux (amd64)**: \`shario-${VERSION}-linux-amd64.tar.gz\`" >> release_notes.md
+        echo "- **Linux (arm64)**: \`shario-${VERSION}-linux-arm64.tar.gz\`" >> release_notes.md
+        echo "- **Windows (amd64)**: \`shario-${VERSION}-windows-amd64.zip\`" >> release_notes.md
+        echo "- **macOS (amd64)**: \`shario-${VERSION}-darwin-amd64.tar.gz\`" >> release_notes.md
+        echo "- **macOS (arm64)**: \`shario-${VERSION}-darwin-arm64.tar.gz\`" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "### Packages" >> release_notes.md
+        echo "- **Debian/Ubuntu**: \`shario-${VERSION}-linux-amd64.deb\`" >> release_notes.md
+        echo "- **CentOS/RHEL/Fedora**: \`shario-${VERSION}-linux-amd64.rpm\`" >> release_notes.md
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        release_name: Shario ${{ steps.get_version.outputs.VERSION }}
+        body_path: release_notes.md
+        draft: false
+        prerelease: false
+
+    # Upload all built assets to the release
+    - name: Upload Release Assets
+      run: |
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        UPLOAD_URL="${{ steps.create_release.outputs.upload_url }}"
+        
+        # Function to upload file
+        upload_file() {
+          local file=$1
+          local content_type=$2
+          
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: $content_type" \
+            --data-binary @"$file" \
+            "${UPLOAD_URL%\{*}?name=$(basename "$file")"
+        }
+        
+        # Upload binary archives
+        for file in artifacts/shario-*/shario-${VERSION}-*; do
+          if [[ -f "$file" ]]; then
+            if [[ "$file" == *.zip ]]; then
+              upload_file "$file" "application/zip"
+            elif [[ "$file" == *.tar.gz ]]; then
+              upload_file "$file" "application/gzip"
+            fi
+          fi
+        done
+        
+        # Upload installer packages
+        for file in artifacts/installers/*; do
+          if [[ -f "$file" ]]; then
+            if [[ "$file" == *.deb ]]; then
+              upload_file "$file" "application/vnd.debian.binary-package"
+            elif [[ "$file" == *.rpm ]]; then
+              upload_file "$file" "application/x-rpm"
+            elif [[ "$file" == *.tar.gz ]]; then
+              upload_file "$file" "application/gzip"
+            fi
+          fi
+        done

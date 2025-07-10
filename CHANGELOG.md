@@ -1,0 +1,105 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- **GitHub Actions CI/CD Workflows**
+  - Comprehensive Go testing workflow (`go.yml`) with matrix testing across platforms (Ubuntu, Windows, macOS) and Go versions (1.21, 1.22, 1.23)
+  - Automated release workflow (`release.yml`) for cross-platform binary building and GitHub releases
+  - Static analysis integration (staticcheck, golint, gofmt)
+  - Code coverage reporting with Codecov integration
+  - Cross-compilation testing for multiple architectures (amd64, arm64)
+  - Package creation for multiple formats (DEB, RPM, DMG, ZIP, TAR.GZ)
+  - Automatic release notes generation from CHANGELOG.md
+  - Support for semantic versioning with git tags
+
+### Changed
+- Updated CLAUDE.md with changelog ordering documentation (newest to oldest)
+- Added critical workflow reminder to always update CHANGELOG.md after file operations
+- Enhanced version management section with practical examples and structure
+- Added git commit attribution reminder to never include Claude Code attribution
+
+## [0.0.1] - 2025-07-10
+
+### Added
+- Initial release of Shario P2P file sharing application
+- **Core P2P Networking**
+  - libp2p-based peer-to-peer networking
+  - Automatic peer discovery via mDNS (local network) and DHT (internet-wide)
+  - Secure transport layer with RSA cryptographic identities
+  - Multi-connection handling for IPv4/IPv6 and different network interfaces
+  - Protocol handlers for chat (`/shario/chat/1.0.0`) and transfer (`/shario/transfer/1.0.0`)
+
+- **File Transfer System**
+  - Complete chunked file transfer with 4KB chunks for optimal network performance
+  - Real-time progress tracking with percentage completion
+  - Base64 encoding for reliable JSON transport of binary data
+  - Transfer status management (pending, active, completed, failed, cancelled)
+  - Automatic checksum calculation using SHA256
+  - Files saved to `~/Downloads/Shario/` directory
+
+- **Real-time Chat System**
+  - Global chat room with automatic peer participation
+  - Real-time nickname synchronization across all connected peers
+  - Compact message display format: `[HH:MM:SS] Nickname: Message`
+  - Support for system messages (join/leave/nickname changes)
+  - Message types: text, system, join, leave, nickname_change
+
+- **Identity Management**
+  - Unique identity files per instance: `~/.shario/identity_[PID].json`
+  - RSA key pair generation for secure peer identification
+  - Customizable nicknames with real-time broadcasting
+  - Prevention of self-connection issues through unique identities
+
+- **Cross-Platform GUI**
+  - Fyne-based user interface supporting Linux, macOS, and Windows
+  - Tabbed interface: Peers, Transfers, Chat
+  - Real-time UI updates via data binding
+  - File transfer management with Cancel and Open buttons
+  - Cross-platform file operations (xdg-open, open, explorer)
+  - Responsive nickname input with Update button
+
+- **Transfer Management**
+  - Cancel button: Stop ongoing transfers with proper cleanup
+  - Open button: Open completed files or containing folder
+  - Transfer list showing filename, status, progress, and controls
+  - Error handling with user-friendly dialog messages
+
+- **UI/UX Improvements**
+  - Compact chat message layout (1 line instead of 3)
+  - Full peer ID display without truncation
+  - Larger nickname input field with better layout
+  - Real-time peer count and connection status
+  - Progress bars for file transfers
+
+- **Development Features**
+  - Comprehensive debugging system with emoji prefixes:
+    - 🎭 Nickname changes
+    - 📁 File transfers
+    - 🎯 Dialog interactions
+    - 🗂️ File operations
+    - 📥📤 Network messages
+  - Modular architecture with clear separation of concerns
+  - Event-driven design with handler registration
+
+### Technical Implementation
+- **Languages/Frameworks**: Go 1.20+, Fyne GUI, libp2p networking
+- **Architecture**: Modular design with packages: app, network, transfer, chat, identity, ui
+- **Protocols**: Custom protocols over libp2p for chat and file transfer
+- **Security**: End-to-end encryption via libp2p secure transport
+- **File Format**: JSON for configuration and message serialization
+- **Network**: Support for both local (mDNS) and internet-wide (DHT) peer discovery
+
+### Known Limitations
+- No persistent chat history (session-only)
+- Single file transfers (no batch operations)
+- No group chat rooms (global room only)
+- No mobile platform support
+- No voice/video capabilities
+
+[0.0.1]: https://github.com/yourusername/shario/releases/tag/v0.0.1
