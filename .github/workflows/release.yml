@@ -286,6 +286,9 @@ jobs:
   release:
     needs: [build, create-installers]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
     
     steps:
     - uses: actions/checkout@v4
@@ -338,16 +341,15 @@ jobs:
 
     - name: Create Release
       id: create_release
-      uses: softprops/action-gh-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.get_version.outputs.VERSION }}
         name: Shario ${{ steps.get_version.outputs.VERSION }}
         body_path: release_notes.md
         draft: false
-        prerelease: false
+        prerelease: ${{ contains(steps.get_version.outputs.VERSION, 'rc') }}
         files: |
           artifacts/shario-*/shario-${{ steps.get_version.outputs.VERSION }}-*
           artifacts/installers/*
+        token: ${{ secrets.GITHUB_TOKEN }}
 

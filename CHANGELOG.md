@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.3] - 2025-07-10
+
+### Fixed
+- Fixed GitHub release creation permissions issue:
+  - Added explicit permissions: contents: write, actions: read to release job
+  - Updated softprops/action-gh-release from v1 to v2 for better permission handling
+  - Moved GITHUB_TOKEN to token parameter instead of env for v2 compatibility
+  - Set prerelease: true automatically for release candidate versions (containing 'rc')
+  - Resolved 403 permission errors when creating GitHub releases
+
+### Changed
+- Updated version references throughout documentation to 1.0.0-rc.3
+
 ## [1.0.0-rc.2] - 2025-07-10
 
 ### Fixed
