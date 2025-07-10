@@ -84,18 +84,23 @@ jobs:
         echo "Building for ${{ matrix.goos }}/${{ matrix.goarch }} with CGO_ENABLED=${{ matrix.cgo_enabled }}"
         go build -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" -o dist/$BINARY_NAME .
 
-    - name: Create archive
+    - name: Create archive (Windows)
+      if: matrix.archive_type == 'zip'
+      shell: pwsh
+      run: |
+        cd dist
+        $BINARY_NAME = "shario-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.binary_suffix }}"
+        $ARCHIVE_NAME = "shario-${{ steps.get_version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.zip"
+        Compress-Archive -Path $BINARY_NAME -DestinationPath $ARCHIVE_NAME
+
+    - name: Create archive (Unix)
+      if: matrix.archive_type == 'tar.gz'
       shell: bash
       run: |
         cd dist
         BINARY_NAME=shario-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.binary_suffix }}
-        ARCHIVE_NAME=shario-${{ steps.get_version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}
-        
-        if [ "${{ matrix.archive_type }}" = "zip" ]; then
-          zip -r ${ARCHIVE_NAME}.zip $BINARY_NAME
-        else
-          tar -czf ${ARCHIVE_NAME}.tar.gz $BINARY_NAME
-        fi
+        ARCHIVE_NAME=shario-${{ steps.get_version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+        tar -czf $ARCHIVE_NAME $BINARY_NAME
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4

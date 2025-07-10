@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-rc.6] - 2025-07-10
+
+### Fixed
+- Fixed Windows zip command issue in release workflow:
+  - Separated archive creation into platform-specific steps
+  - Windows uses PowerShell `Compress-Archive` cmdlet instead of bash `zip` command
+  - Unix systems continue using bash `tar` command for .tar.gz archives
+  - Ensures proper cross-platform compatibility for GitHub Actions releases
+
+### Changed
+- Updated version references throughout documentation to 0.0.1-rc.6
+
 ## [0.0.1-rc.5] - 2025-07-10
 
 ### Fixed
