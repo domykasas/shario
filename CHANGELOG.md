@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-rc.9] - 2025-07-10
+
+### Fixed
+- Fixed Go code formatting issues in CI workflow (recurring issue):
+  - Ran `go fmt ./...` to format all Go source files again
+  - Ensures consistent code formatting across the codebase
+  - Resolves GitHub Actions formatting check failures
+
+### Changed
+- Updated version references throughout documentation to 0.0.1-rc.9
+
 ## [0.0.1-rc.8] - 2025-07-10
 
 ### Fixed
