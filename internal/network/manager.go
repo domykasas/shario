@@ -60,7 +60,6 @@ type Manager struct {
 	
 	// Configuration
 	listenAddrs   []multiaddr.Multiaddr
-	bootstrapPeers []peer.AddrInfo
 }
 
 // NetworkEventHandler defines the interface for network event callbacks

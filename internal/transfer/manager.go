@@ -41,7 +41,6 @@ type Transfer struct {
 	file          *os.File
 	cancel        context.CancelFunc
 	lastUpdate    time.Time
-	lastBytes     int64
 }
 
 // TransferStatus represents the status of a transfer

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-rc.2] - 2025-07-10
+
 ### Added
 - **GitHub Actions CI/CD Workflows**
   - Comprehensive Go testing workflow (`go.yml`) with matrix testing across platforms (Ubuntu, Windows, macOS) and Go versions (1.21, 1.22, 1.23)
@@ -23,6 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added critical workflow reminder to always update CHANGELOG.md after file operations
 - Enhanced version management section with practical examples and structure
 - Added git commit attribution reminder to never include Claude Code attribution
+- Updated CLAUDE.md with comprehensive pre-release version documentation (rc.1, rc.2, etc.)
+- Updated project version references to reflect current 0.0.1-rc.2 status
+- Added README.md update reminder to CLAUDE.md workflow section - ensure documentation stays current
+- Added git push policy reminder to CLAUDE.md - only human controls git push operations, can suggest but not execute automatically
+- Added version release workflow reminder to CLAUDE.md - comprehensive documentation update process
+
+### Fixed
+- Fixed staticcheck errors in GitHub Actions workflow:
+  - Removed unused `bootstrapPeers` field from network manager
+  - Removed unused `lastBytes` field from transfer manager  
+  - Removed unused `selectedPeer` field from UI manager
+  - Removed unused `createTestRoom` function from UI manager
 
 ## [0.0.1] - 2025-07-10
 

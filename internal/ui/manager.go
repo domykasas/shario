@@ -50,7 +50,6 @@ type Manager struct {
 	
 	// Current state
 	currentRoom     *chat.Room
-	selectedPeer    *network.Peer
 	refreshTicker   *time.Ticker
 }
 
@@ -675,14 +674,6 @@ func (m *Manager) startChatWithPeer(peerIDStr string) {
 	m.refreshChatRooms()
 }
 
-// createTestRoom creates a test chat room for debugging/testing
-func (m *Manager) createTestRoom() {
-	// Create a special local-only test room that doesn't try to send to peers
-	testRoom := m.chat.CreateLocalTestRoom("Local Test Room")
-	m.currentRoom = testRoom
-	m.refreshMessages()
-	m.refreshChatRooms()
-}
 
 // connectToPeerManually attempts to connect to a peer using their multiaddress
 func (m *Manager) connectToPeerManually(addrStr string) {
