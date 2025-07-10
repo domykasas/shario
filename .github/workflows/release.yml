@@ -190,14 +190,14 @@ jobs:
         cp dist/shario-linux-amd64/shario-${VERSION}-linux-amd64.tar.gz ~/rpmbuild/SOURCES/
         
         # Create spec file
-        cat > ~/rpmbuild/SPECS/shario.spec << EOF
+        cat > ~/rpmbuild/SPECS/shario.spec << 'SPEC_EOF'
         Name: shario
-        Version: ${VERSION_NUM}
+        Version: VERSION_PLACEHOLDER
         Release: 1%{?dist}
         Summary: P2P File Sharing Application
         License: MIT
-        URL: https://github.com/yourusername/shario
-        Source0: shario-${VERSION}-linux-amd64.tar.gz
+        URL: https://github.com/domykasas/shario
+        Source0: shario-VERSION_TAG_PLACEHOLDER-linux-amd64.tar.gz
         
         BuildRequires: gcc
         Requires: mesa-libGL libXcursor libXrandr libXinerama libXi libXxf86vm alsa-lib
@@ -217,7 +217,7 @@ jobs:
         mkdir -p %{buildroot}/usr/share/applications
         cp shario-linux-amd64 %{buildroot}/usr/bin/shario
         
-        cat > %{buildroot}/usr/share/applications/shario.desktop << 'EOF'
+        cat > %{buildroot}/usr/share/applications/shario.desktop << 'DESKTOP_EOF'
         [Desktop Entry]
         Name=Shario
         Comment=P2P File Sharing Application
@@ -226,16 +226,21 @@ jobs:
         Terminal=false
         Type=Application
         Categories=Network;FileTransfer;
-        EOF
+        DESKTOP_EOF
         
         %files
         /usr/bin/shario
         /usr/share/applications/shario.desktop
         
         %changelog
-        * $(date +'%a %b %d %Y') Shario Team <team@shario.dev> - ${VERSION_NUM}-1
-        - Release ${VERSION}
-        EOF
+        * DATE_PLACEHOLDER Shario Team <team@shario.dev> - VERSION_PLACEHOLDER-1
+        - Release VERSION_TAG_PLACEHOLDER
+        SPEC_EOF
+        
+        # Replace placeholders in spec file
+        sed -i "s/VERSION_PLACEHOLDER/${VERSION_NUM}/g" ~/rpmbuild/SPECS/shario.spec
+        sed -i "s/VERSION_TAG_PLACEHOLDER/${VERSION}/g" ~/rpmbuild/SPECS/shario.spec
+        sed -i "s/DATE_PLACEHOLDER/$(date +'%a %b %d %Y')/g" ~/rpmbuild/SPECS/shario.spec
         
         # Build RPM
         cd ~/rpmbuild/SOURCES

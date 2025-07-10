@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-rc.8] - 2025-07-10
+
+### Fixed
+- Fixed RPM package creation shell error in release workflow:
+  - Properly escaped heredoc in RPM spec file creation
+  - Fixed nested EOF handling that was causing "fg: no job control" error
+  - Used placeholders and sed replacement to avoid shell expansion issues
+  - Updated GitHub repository URL in RPM spec file
+
+### Changed
+- Updated version references throughout documentation to 0.0.1-rc.8
+
 ## [0.0.1-rc.7] - 2025-07-10
 
 ### Fixed
