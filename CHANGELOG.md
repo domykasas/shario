@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-rc.4] - 2025-07-10
+
 ### Fixed
 - Fixed release workflow cross-compilation issues:
   - Removed problematic Linux ARM64 cross-compilation (requires complex toolchain setup)
@@ -18,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Replaced with native compilation test on each platform
   - Each runner now only tests building for its own platform
 - Fixed recurring Go code formatting issues in CI - re-ran `go fmt ./...` to ensure proper formatting
+
+### Changed
+- Updated version references throughout documentation to 0.0.1-rc.4
 
 ## [0.0.1-rc.3] - 2025-07-10
 
