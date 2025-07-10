@@ -38,7 +38,7 @@ type App struct {
 // New creates a new Shario application instance
 func New() (*App, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Create Fyne application
 	fyneApp := app.New()
 
@@ -160,7 +160,7 @@ func (a *App) GetStatus() map[string]interface{} {
 func (a *App) GetPeers() []*widget.Card {
 	peers := a.network.GetPeers()
 	cards := make([]*widget.Card, len(peers))
-	
+
 	for i, peer := range peers {
 		cards[i] = widget.NewCard(
 			peer.Nickname,
@@ -168,6 +168,6 @@ func (a *App) GetPeers() []*widget.Card {
 			widget.NewLabel(fmt.Sprintf("Connected: %s", peer.ConnectedAt.Format("15:04:05"))),
 		)
 	}
-	
+
 	return cards
 }

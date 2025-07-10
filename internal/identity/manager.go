@@ -36,20 +36,20 @@ func New() (*Manager, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config directory: %w", err)
 	}
-	
+
 	// Create unique identity file for each instance
 	// This allows multiple instances to run with different identities
 	configPath := filepath.Join(configDir, fmt.Sprintf("identity_%d.json", os.Getpid()))
-	
+
 	manager := &Manager{
 		configPath: configPath,
 	}
-	
+
 	// Load existing identity or create new one
 	if err := manager.loadOrCreateIdentity(); err != nil {
 		return nil, fmt.Errorf("failed to load or create identity: %w", err)
 	}
-	
+
 	return manager, nil
 }
 
@@ -59,7 +59,7 @@ func (m *Manager) loadOrCreateIdentity() error {
 	if _, err := os.Stat(m.configPath); err == nil {
 		return m.loadIdentity()
 	}
-	
+
 	// Create new identity
 	return m.createIdentity()
 }
@@ -70,37 +70,37 @@ func (m *Manager) loadIdentity() error {
 	if err != nil {
 		return fmt.Errorf("failed to read identity file: %w", err)
 	}
-	
+
 	var identity Identity
 	if err := json.Unmarshal(data, &identity); err != nil {
 		return fmt.Errorf("failed to unmarshal identity: %w", err)
 	}
-	
+
 	// Parse private key
 	privateKeyBytes, err := crypto.ConfigDecodeKey(identity.PrivateKey)
 	if err != nil {
 		return fmt.Errorf("failed to decode private key: %w", err)
 	}
-	
+
 	privateKey, err := crypto.UnmarshalPrivateKey(privateKeyBytes)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal private key: %w", err)
 	}
-	
+
 	// Get public key
 	publicKey := privateKey.GetPublic()
-	
+
 	// Generate peer ID
 	peerID, err := peer.IDFromPublicKey(publicKey)
 	if err != nil {
 		return fmt.Errorf("failed to generate peer ID: %w", err)
 	}
-	
+
 	m.identity = &identity
 	m.privateKey = privateKey
 	m.publicKey = publicKey
 	m.peerID = peerID
-	
+
 	return nil
 }
 
@@ -111,24 +111,24 @@ func (m *Manager) createIdentity() error {
 	if err != nil {
 		return fmt.Errorf("failed to generate keypair: %w", err)
 	}
-	
+
 	// Generate peer ID
 	peerID, err := peer.IDFromPublicKey(publicKey)
 	if err != nil {
 		return fmt.Errorf("failed to generate peer ID: %w", err)
 	}
-	
+
 	// Marshal keys
 	privateKeyBytes, err := crypto.MarshalPrivateKey(privateKey)
 	if err != nil {
 		return fmt.Errorf("failed to marshal private key: %w", err)
 	}
-	
+
 	publicKeyBytes, err := crypto.MarshalPublicKey(publicKey)
 	if err != nil {
 		return fmt.Errorf("failed to marshal public key: %w", err)
 	}
-	
+
 	// Create identity
 	identity := &Identity{
 		Nickname:   "Anonymous",
@@ -136,17 +136,17 @@ func (m *Manager) createIdentity() error {
 		PrivateKey: crypto.ConfigEncodeKey(privateKeyBytes),
 		PeerID:     peerID.String(),
 	}
-	
+
 	// Save identity
 	if err := m.saveIdentity(identity); err != nil {
 		return fmt.Errorf("failed to save identity: %w", err)
 	}
-	
+
 	m.identity = identity
 	m.privateKey = privateKey
 	m.publicKey = publicKey
 	m.peerID = peerID
-	
+
 	return nil
 }
 
@@ -156,16 +156,16 @@ func (m *Manager) saveIdentity(identity *Identity) error {
 	if err := os.MkdirAll(filepath.Dir(m.configPath), 0755); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
-	
+
 	data, err := json.MarshalIndent(identity, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal identity: %w", err)
 	}
-	
+
 	if err := os.WriteFile(m.configPath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write identity file: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -207,12 +207,12 @@ func (m *Manager) VerifyIdentity(peerID peer.ID, publicKey crypto.PubKey) error 
 	if err != nil {
 		return fmt.Errorf("failed to generate peer ID from public key: %w", err)
 	}
-	
+
 	// Compare peer IDs
 	if peerID != expectedPeerID {
 		return fmt.Errorf("peer ID mismatch: expected %s, got %s", expectedPeerID, peerID)
 	}
-	
+
 	return nil
 }
 
@@ -232,7 +232,7 @@ func getConfigDir() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
-	
+
 	configDir := filepath.Join(homeDir, ".shario")
 	return configDir, nil
 }
@@ -248,38 +248,38 @@ func (m *Manager) ImportIdentity(data []byte) error {
 	if err := json.Unmarshal(data, &identity); err != nil {
 		return fmt.Errorf("failed to unmarshal identity: %w", err)
 	}
-	
+
 	// Validate the identity
 	privateKeyBytes, err := crypto.ConfigDecodeKey(identity.PrivateKey)
 	if err != nil {
 		return fmt.Errorf("failed to decode private key: %w", err)
 	}
-	
+
 	privateKey, err := crypto.UnmarshalPrivateKey(privateKeyBytes)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal private key: %w", err)
 	}
-	
+
 	publicKey := privateKey.GetPublic()
 	peerID, err := peer.IDFromPublicKey(publicKey)
 	if err != nil {
 		return fmt.Errorf("failed to generate peer ID: %w", err)
 	}
-	
+
 	if peerID.String() != identity.PeerID {
 		return fmt.Errorf("peer ID mismatch in imported identity")
 	}
-	
+
 	// Save the new identity
 	if err := m.saveIdentity(&identity); err != nil {
 		return fmt.Errorf("failed to save imported identity: %w", err)
 	}
-	
+
 	// Update manager state
 	m.identity = &identity
 	m.privateKey = privateKey
 	m.publicKey = publicKey
 	m.peerID = peerID
-	
+
 	return nil
 }

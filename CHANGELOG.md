@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-rc.3] - 2025-07-10
+
 ### Fixed
 - Fixed deprecated GitHub Actions in release workflow:
   - Updated `actions/upload-artifact` from v3 to v4
@@ -14,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated `actions/cache` from v3 to v4
   - Replaced deprecated `actions/create-release@v1` with `softprops/action-gh-release@v1`
   - Simplified release asset upload process
+- Fixed Go code formatting issues in GitHub Actions workflow - ran `go fmt ./...` to format all source files
+
+### Changed
+- Updated git configuration: Changed username from "D" to "domykasas" for proper attribution
+- Added pre-release version increment rule to CLAUDE.md - auto-increment rc.N before each git push
+- Updated version references throughout documentation to 0.0.1-rc.3
 
 ## [0.0.1-rc.2] - 2025-07-10
 

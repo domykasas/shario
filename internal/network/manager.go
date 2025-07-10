@@ -24,10 +24,10 @@ const (
 	// Protocol IDs
 	ChatProtocol     = protocol.ID("/shario/chat/1.0.0")
 	TransferProtocol = protocol.ID("/shario/transfer/1.0.0")
-	
+
 	// Discovery constants
 	ServiceTag = "shario-p2p"
-	
+
 	// Connection timeouts
 	ConnectionTimeout = 30 * time.Second
 )
@@ -44,12 +44,12 @@ type Peer struct {
 // Manager handles all P2P networking operations
 type Manager struct {
 	// Core components
-	host         host.Host
-	dht          *dht.IpfsDHT
-	discovery    mdns.Service
-	routingDisc  *routing.RoutingDiscovery
-	identity     *identity.Manager
-	
+	host        host.Host
+	dht         *dht.IpfsDHT
+	discovery   mdns.Service
+	routingDisc *routing.RoutingDiscovery
+	identity    *identity.Manager
+
 	// State management
 	ctx           context.Context
 	cancel        context.CancelFunc
@@ -57,9 +57,9 @@ type Manager struct {
 	peersMutex    sync.RWMutex
 	eventHandlers map[string][]NetworkEventHandler
 	handlersMutex sync.RWMutex
-	
+
 	// Configuration
-	listenAddrs   []multiaddr.Multiaddr
+	listenAddrs []multiaddr.Multiaddr
 }
 
 // NetworkEventHandler defines the interface for network event callbacks
@@ -72,13 +72,13 @@ type NetworkEventHandler interface {
 // New creates a new network manager
 func New(ctx context.Context, identityMgr *identity.Manager) (*Manager, error) {
 	netCtx, cancel := context.WithCancel(ctx)
-	
+
 	// Create listen addresses
 	listenAddrs := []multiaddr.Multiaddr{
 		multiaddr.StringCast("/ip4/0.0.0.0/tcp/0"),
 		multiaddr.StringCast("/ip6/::/tcp/0"),
 	}
-	
+
 	// Create libp2p host
 	h, err := libp2p.New(
 		libp2p.Identity(identityMgr.GetPrivateKey()),
@@ -90,9 +90,9 @@ func New(ctx context.Context, identityMgr *identity.Manager) (*Manager, error) {
 		cancel()
 		return nil, fmt.Errorf("failed to create libp2p host: %w", err)
 	}
-	
+
 	log.Printf("Libp2p host created with ID: %s", h.ID().String())
-	
+
 	// Create DHT
 	kademliaDHT, err := dht.New(netCtx, h)
 	if err != nil {
@@ -100,10 +100,10 @@ func New(ctx context.Context, identityMgr *identity.Manager) (*Manager, error) {
 		h.Close()
 		return nil, fmt.Errorf("failed to create DHT: %w", err)
 	}
-	
+
 	// Create routing discovery
 	routingDisc := routing.NewRoutingDiscovery(kademliaDHT)
-	
+
 	manager := &Manager{
 		host:          h,
 		dht:           kademliaDHT,
@@ -115,42 +115,42 @@ func New(ctx context.Context, identityMgr *identity.Manager) (*Manager, error) {
 		eventHandlers: make(map[string][]NetworkEventHandler),
 		listenAddrs:   listenAddrs,
 	}
-	
+
 	// Set up connection event handlers
 	h.Network().Notify((*networkNotifiee)(manager))
-	
+
 	// Set up stream handlers
 	h.SetStreamHandler(ChatProtocol, manager.handleChatStream)
 	h.SetStreamHandler(TransferProtocol, manager.handleTransferStream)
-	
+
 	return manager, nil
 }
 
 // Start initializes the network manager and starts discovery
 func (m *Manager) Start() error {
 	log.Println("Starting network manager...")
-	
+
 	// Bootstrap DHT
 	if err := m.dht.Bootstrap(m.ctx); err != nil {
 		return fmt.Errorf("failed to bootstrap DHT: %w", err)
 	}
-	
+
 	// Start mDNS discovery
 	if err := m.startMDNSDiscovery(); err != nil {
 		log.Printf("Failed to start mDNS discovery: %v", err)
 	}
-	
+
 	// Start DHT discovery
 	go m.startDHTDiscovery()
-	
+
 	// Announce ourselves
 	go m.announcePresence()
-	
+
 	log.Printf("Network manager started. Listening on:")
 	for _, addr := range m.host.Addrs() {
 		log.Printf("  %s/p2p/%s", addr, m.host.ID().String())
 	}
-	
+
 	return nil
 }
 
@@ -162,7 +162,7 @@ func (m *Manager) startMDNSDiscovery() error {
 	for _, addr := range m.host.Addrs() {
 		log.Printf("  %s", addr.String())
 	}
-	
+
 	notifiee := &discoveryNotifiee{manager: m}
 	service := mdns.NewMdnsService(m.host, ServiceTag, notifiee)
 	if err := service.Start(); err != nil {
@@ -170,16 +170,16 @@ func (m *Manager) startMDNSDiscovery() error {
 		log.Printf("You may not be able to discover peers on the local network")
 		return nil // Don't fail the whole app if mDNS fails
 	}
-	
+
 	m.discovery = service
 	log.Printf("mDNS discovery service started successfully")
-	
+
 	// Add periodic check to see if mDNS is working
 	go func() {
 		ticker := time.NewTicker(15 * time.Second)
 		defer ticker.Stop()
 		checks := 0
-		
+
 		for {
 			select {
 			case <-m.ctx.Done():
@@ -194,14 +194,14 @@ func (m *Manager) startMDNSDiscovery() error {
 			}
 		}
 	}()
-	
+
 	return nil
 }
 
 // startDHTDiscovery starts DHT-based peer discovery
 func (m *Manager) startDHTDiscovery() {
 	log.Println("Starting DHT discovery...")
-	
+
 	// Initial discovery attempt
 	go func() {
 		if _, err := m.routingDisc.Advertise(m.ctx, ServiceTag); err != nil {
@@ -210,12 +210,12 @@ func (m *Manager) startDHTDiscovery() {
 			log.Printf("Successfully advertised service '%s' on DHT", ServiceTag)
 		}
 	}()
-	
+
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
-	
+
 	discoveryCount := 0
-	
+
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -223,30 +223,30 @@ func (m *Manager) startDHTDiscovery() {
 		case <-ticker.C:
 			discoveryCount++
 			log.Printf("DHT discovery attempt #%d", discoveryCount)
-			
+
 			peerChan, err := m.routingDisc.FindPeers(m.ctx, ServiceTag)
 			if err != nil {
 				log.Printf("Failed to find peers via DHT: %v", err)
 				continue
 			}
-			
+
 			go func() {
 				peersFound := 0
 				for peerInfo := range peerChan {
 					if peerInfo.ID == m.host.ID() {
 						continue
 					}
-					
+
 					peersFound++
 					log.Printf("Found peer via DHT: %s", peerInfo.ID)
-					
+
 					if err := m.host.Connect(m.ctx, peerInfo); err != nil {
 						log.Printf("Failed to connect to DHT peer %s: %v", peerInfo.ID, err)
 					} else {
 						log.Printf("Successfully connected to DHT peer: %s", peerInfo.ID)
 					}
 				}
-				
+
 				if peersFound == 0 {
 					log.Printf("No peers found via DHT in attempt #%d", discoveryCount)
 				}
@@ -259,7 +259,7 @@ func (m *Manager) startDHTDiscovery() {
 func (m *Manager) announcePresence() {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -279,12 +279,12 @@ func (m *Manager) announcePresence() {
 func (m *Manager) GetPeers() []*Peer {
 	m.peersMutex.RLock()
 	defer m.peersMutex.RUnlock()
-	
+
 	peers := make([]*Peer, 0, len(m.peers))
 	for _, peer := range m.peers {
 		peers = append(peers, peer)
 	}
-	
+
 	return peers
 }
 
@@ -312,11 +312,11 @@ func (m *Manager) SendMessage(peerID peer.ID, protocol protocol.ID, data []byte)
 		return fmt.Errorf("failed to create stream to peer %s: %w", peerID, err)
 	}
 	defer stream.Close()
-	
+
 	if _, err := stream.Write(data); err != nil {
 		return fmt.Errorf("failed to send message to peer %s: %w", peerID, err)
 	}
-	
+
 	return nil
 }
 
@@ -324,7 +324,7 @@ func (m *Manager) SendMessage(peerID peer.ID, protocol protocol.ID, data []byte)
 func (m *Manager) AddEventHandler(name string, handler NetworkEventHandler) {
 	m.handlersMutex.Lock()
 	defer m.handlersMutex.Unlock()
-	
+
 	if m.eventHandlers[name] == nil {
 		m.eventHandlers[name] = make([]NetworkEventHandler, 0)
 	}
@@ -335,7 +335,7 @@ func (m *Manager) AddEventHandler(name string, handler NetworkEventHandler) {
 func (m *Manager) RemoveEventHandler(name string) {
 	m.handlersMutex.Lock()
 	defer m.handlersMutex.Unlock()
-	
+
 	delete(m.eventHandlers, name)
 }
 
@@ -343,7 +343,7 @@ func (m *Manager) RemoveEventHandler(name string) {
 func (m *Manager) notifyPeerConnected(peer *Peer) {
 	m.handlersMutex.RLock()
 	defer m.handlersMutex.RUnlock()
-	
+
 	for _, handlers := range m.eventHandlers {
 		for _, handler := range handlers {
 			go handler.OnPeerConnected(peer)
@@ -355,7 +355,7 @@ func (m *Manager) notifyPeerConnected(peer *Peer) {
 func (m *Manager) notifyPeerDisconnected(peerID peer.ID) {
 	m.handlersMutex.RLock()
 	defer m.handlersMutex.RUnlock()
-	
+
 	for _, handlers := range m.eventHandlers {
 		for _, handler := range handlers {
 			go handler.OnPeerDisconnected(peerID)
@@ -367,7 +367,7 @@ func (m *Manager) notifyPeerDisconnected(peerID peer.ID) {
 func (m *Manager) notifyMessage(peerID peer.ID, protocol protocol.ID, data []byte) {
 	m.handlersMutex.RLock()
 	defer m.handlersMutex.RUnlock()
-	
+
 	for _, handlers := range m.eventHandlers {
 		for _, handler := range handlers {
 			go handler.OnMessage(peerID, protocol, data)
@@ -378,7 +378,7 @@ func (m *Manager) notifyMessage(peerID peer.ID, protocol protocol.ID, data []byt
 // handleChatStream handles incoming chat streams
 func (m *Manager) handleChatStream(stream network.Stream) {
 	defer stream.Close()
-	
+
 	// Read message data
 	buf := make([]byte, 4096)
 	n, err := stream.Read(buf)
@@ -386,7 +386,7 @@ func (m *Manager) handleChatStream(stream network.Stream) {
 		log.Printf("Failed to read chat message: %v", err)
 		return
 	}
-	
+
 	// Notify handlers
 	m.notifyMessage(stream.Conn().RemotePeer(), ChatProtocol, buf[:n])
 }
@@ -394,7 +394,7 @@ func (m *Manager) handleChatStream(stream network.Stream) {
 // handleTransferStream handles incoming file transfer streams
 func (m *Manager) handleTransferStream(stream network.Stream) {
 	defer stream.Close()
-	
+
 	// Read transfer data
 	buf := make([]byte, 4096)
 	n, err := stream.Read(buf)
@@ -402,7 +402,7 @@ func (m *Manager) handleTransferStream(stream network.Stream) {
 		log.Printf("Failed to read transfer message: %v", err)
 		return
 	}
-	
+
 	// Notify handlers
 	m.notifyMessage(stream.Conn().RemotePeer(), TransferProtocol, buf[:n])
 }
@@ -410,14 +410,14 @@ func (m *Manager) handleTransferStream(stream network.Stream) {
 // Close shuts down the network manager
 func (m *Manager) Close() error {
 	m.cancel()
-	
+
 	if m.discovery != nil {
 		m.discovery.Close()
 	}
-	
+
 	if m.dht != nil {
 		m.dht.Close()
 	}
-	
+
 	return m.host.Close()
 }

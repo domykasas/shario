@@ -2,7 +2,7 @@
 
 ## Project Overview
 **Shario** - Cross-platform P2P file-sharing application with real-time chat
-- **Current Version**: 0.0.1-rc.2 (Release Candidate - 2025-07-10)
+- **Current Version**: 0.0.1-rc.3 (Release Candidate - 2025-07-10)
 - **Language**: Go 1.20+
 - **GUI**: Fyne framework  
 - **Networking**: libp2p (mDNS + DHT discovery)
@@ -12,8 +12,8 @@
 ## Versioning
 - **Follows**: [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH)
 - **Changelog**: [Keep a Changelog](https://keepachangelog.com/) format
-- **Current**: v0.0.1-rc.2 - Release candidate with all core P2P functionality + staticcheck fixes
-- **Next**: v0.0.1 - Stable release (after testing rc.2)
+- **Current**: v0.0.1-rc.3 - Release candidate with all core P2P functionality + staticcheck fixes + workflow fixes
+- **Next**: v0.0.1 - Stable release (after testing rc.3)
 
 ### Pre-release Versions (Release Candidates)
 - **Format**: `MAJOR.MINOR.PATCH-rc.N` (e.g., 0.0.1-rc.1, 0.0.1-rc.2)
@@ -218,6 +218,21 @@ peersData, transfersData, messagesData binding.StringList
 - **Pre-release workflow**: Development → Update docs → Commit → Tag `v0.0.1-rc.N` → Push
 - **Stable release workflow**: Final testing → Update docs → Commit → Tag `v0.0.1` → Push
 - **Remember**: Each release must have consistent version numbers across all documentation
+
+### 🔢 PRE-RELEASE VERSION INCREMENT RULE
+**BEFORE EVERY "git push" with release candidate versions:**
+1. **Auto-increment RC version**: Current version + 1
+   - Example: `0.0.1-rc.2` → `0.0.1-rc.3`
+   - Example: `0.0.1-rc.5` → `0.0.1-rc.6`
+   - Example: `0.1.0-rc.1` → `0.1.0-rc.2`
+2. **Update sequence BEFORE git push**:
+   - Step 1: Increment version number in CLAUDE.md
+   - Step 2: Update CHANGELOG.md (move [Unreleased] to new rc.X section)
+   - Step 3: Update README.md (if version references exist)
+   - Step 4: Git add, commit, tag with new version
+   - Step 5: Git push (when explicitly requested)
+3. **Version format**: Always use `v0.0.1-rc.N` for tags (with 'v' prefix)
+4. **Exception**: Only skip increment when moving from rc.N to stable (e.g., rc.3 → 0.0.1)
 
 ## Development Notes
 - Use unique identity files per process for multi-instance testing

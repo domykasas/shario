@@ -26,31 +26,31 @@ import (
 
 // Manager handles the user interface
 type Manager struct {
-	app       fyne.App
-	window    fyne.Window
-	identity  *identity.Manager
-	network   *network.Manager
-	transfer  *transfer.Manager
-	chat      *chat.Manager
-	
+	app      fyne.App
+	window   fyne.Window
+	identity *identity.Manager
+	network  *network.Manager
+	transfer *transfer.Manager
+	chat     *chat.Manager
+
 	// UI components
-	peersList        *widget.List
-	transfersList    *widget.List
-	chatRoomsList    *widget.List
-	messagesList     *widget.List
-	messageEntry     *widget.Entry
-	statusLabel      *widget.Label
-	nicknameEntry    *widget.Entry
-	
+	peersList     *widget.List
+	transfersList *widget.List
+	chatRoomsList *widget.List
+	messagesList  *widget.List
+	messageEntry  *widget.Entry
+	statusLabel   *widget.Label
+	nicknameEntry *widget.Entry
+
 	// Data bindings
 	peersData     binding.StringList
 	transfersData binding.StringList
 	roomsData     binding.StringList
 	messagesData  binding.StringList
-	
+
 	// Current state
-	currentRoom     *chat.Room
-	refreshTicker   *time.Ticker
+	currentRoom   *chat.Room
+	refreshTicker *time.Ticker
 }
 
 // New creates a new UI manager
@@ -62,16 +62,16 @@ func New(fyneApp fyne.App, identityMgr *identity.Manager, networkMgr *network.Ma
 		transfer: transferMgr,
 		chat:     chatMgr,
 	}
-	
+
 	// Initialize data bindings
 	manager.peersData = binding.NewStringList()
 	manager.transfersData = binding.NewStringList()
 	manager.roomsData = binding.NewStringList()
 	manager.messagesData = binding.NewStringList()
-	
+
 	// Set up event handlers
 	manager.setupEventHandlers()
-	
+
 	return manager
 }
 
@@ -80,18 +80,18 @@ func (m *Manager) ShowMainWindow() {
 	m.window = m.app.NewWindow("Shario - P2P File Sharing")
 	m.window.Resize(fyne.NewSize(1200, 800))
 	m.window.CenterOnScreen()
-	
+
 	// Create main content
 	content := m.createMainContent()
 	m.window.SetContent(content)
-	
+
 	// Set up menu
 	m.setupMenu()
-	
+
 	// Start refresh ticker
 	m.refreshTicker = time.NewTicker(2 * time.Second)
 	go m.refreshLoop()
-	
+
 	// Auto-select global room after a short delay
 	go func() {
 		time.Sleep(1 * time.Second) // Wait for chat manager to initialize
@@ -101,7 +101,7 @@ func (m *Manager) ShowMainWindow() {
 			m.refreshChatRooms()
 		}
 	}()
-	
+
 	// Show window
 	m.window.Show()
 }
@@ -110,19 +110,19 @@ func (m *Manager) ShowMainWindow() {
 func (m *Manager) createMainContent() *fyne.Container {
 	// Create sidebar
 	sidebar := m.createSidebar()
-	
+
 	// Create main content area
 	mainContent := m.createMainContentArea()
-	
+
 	// Create status bar
 	statusBar := m.createStatusBar()
-	
+
 	// Create main layout
 	return container.NewBorder(
-		nil,     // top
-		statusBar, // bottom
-		sidebar, // left
-		nil,     // right
+		nil,         // top
+		statusBar,   // bottom
+		sidebar,     // left
+		nil,         // right
 		mainContent, // center
 	)
 }
@@ -135,12 +135,12 @@ func (m *Manager) createSidebar() *fyne.Container {
 		container.NewTabItem("Transfers", m.createTransfersTab()),
 		container.NewTabItem("Chat", m.createChatTab()),
 	)
-	
+
 	tabs.SetTabLocation(container.TabLocationTop)
-	
+
 	// Create user info section
 	userInfo := m.createUserInfoSection()
-	
+
 	return container.NewBorder(
 		userInfo, // top
 		nil,      // bottom
@@ -156,7 +156,7 @@ func (m *Manager) createUserInfoSection() *fyne.Container {
 	m.nicknameEntry = widget.NewEntry()
 	m.nicknameEntry.SetText(m.identity.GetNickname())
 	fmt.Printf("🎭 UI: Created nickname entry with initial text: '%s'\n", m.identity.GetNickname())
-	
+
 	m.nicknameEntry.OnSubmitted = func(text string) {
 		fmt.Printf("🎭 UI: Nickname change requested: '%s'\n", text)
 		if err := m.identity.SetNickname(text); err != nil {
@@ -169,17 +169,17 @@ func (m *Manager) createUserInfoSection() *fyne.Container {
 			fmt.Printf("🎭 UI: Updated nickname entry field to '%s'\n", text)
 		}
 	}
-	
+
 	// Also add OnChanged callback to see if the field is being edited
 	m.nicknameEntry.OnChanged = func(text string) {
 		fmt.Printf("🎭 UI: Nickname entry changed to: '%s'\n", text)
 	}
-	
+
 	// Add update button as backup method for nickname changes
 	updateNicknameBtn := widget.NewButton("Update", func() {
 		currentText := m.nicknameEntry.Text
 		fmt.Printf("🎭 UI: Update button clicked with text: '%s'\n", currentText)
-		
+
 		if strings.TrimSpace(currentText) != "" {
 			if err := m.identity.SetNickname(currentText); err != nil {
 				m.showError("Failed to set nickname", err)
@@ -191,10 +191,10 @@ func (m *Manager) createUserInfoSection() *fyne.Container {
 			}
 		}
 	})
-	
+
 	// Peer ID label
 	peerIDLabel := widget.NewLabel(fmt.Sprintf("ID: %s", m.identity.GetPeerID().String()))
-	
+
 	return container.NewVBox(
 		widget.NewCard("Your Identity", "",
 			container.NewVBox(
@@ -235,15 +235,15 @@ func (m *Manager) createPeersTab() *fyne.Container {
 				cont := obj.(*fyne.Container)
 				vbox := cont.Objects[0].(*fyne.Container)
 				hbox := cont.Objects[1].(*fyne.Container)
-				
+
 				nameLabel := vbox.Objects[0].(*widget.Label)
 				idLabel := vbox.Objects[1].(*widget.Label)
 				chatBtn := hbox.Objects[0].(*widget.Button)
 				sendFileBtn := hbox.Objects[1].(*widget.Button)
-				
+
 				nameLabel.SetText(parts[0])
 				idLabel.SetText(parts[1])
-				
+
 				// Set button callbacks
 				chatBtn.OnTapped = func() {
 					m.startChatWithPeer(parts[1])
@@ -254,21 +254,21 @@ func (m *Manager) createPeersTab() *fyne.Container {
 			}
 		},
 	)
-	
+
 	// Add refresh button and status info
 	refreshBtn := widget.NewButton("Refresh Peers", func() {
 		m.refreshPeers()
 	})
-	
+
 	// Add manual connection button
 	connectBtn := widget.NewButton("Connect to Peer", func() {
 		m.showConnectToPeerDialog()
 	})
-	
+
 	// Add peer count and connection info
 	peerCountLabel := widget.NewLabel("Peers: 0")
 	hostInfoLabel := widget.NewLabel(fmt.Sprintf("Host: %s", m.identity.GetPeerID().String()))
-	
+
 	// Update peer count label periodically
 	go func() {
 		for range time.Tick(2 * time.Second) {
@@ -276,7 +276,7 @@ func (m *Manager) createPeersTab() *fyne.Container {
 			peerCountLabel.SetText(fmt.Sprintf("Peers: %d", count))
 		}
 	}()
-	
+
 	return container.NewVBox(
 		widget.NewLabel("Connected Peers"),
 		peerCountLabel,
@@ -314,21 +314,21 @@ func (m *Manager) createTransfersTab() *fyne.Container {
 				cont := obj.(*fyne.Container)
 				vbox := cont.Objects[0].(*fyne.Container)
 				hbox := cont.Objects[1].(*fyne.Container)
-				
+
 				nameLabel := vbox.Objects[0].(*widget.Label)
 				progressBar := vbox.Objects[1].(*widget.ProgressBar)
 				statusLabel := vbox.Objects[2].(*widget.Label)
 				cancelBtn := hbox.Objects[0].(*widget.Button)
 				openBtn := hbox.Objects[1].(*widget.Button)
-				
+
 				nameLabel.SetText(parts[0])
 				statusLabel.SetText(parts[1])
-				
+
 				// Parse progress
 				var progress float64
 				fmt.Sscanf(parts[2], "%f", &progress)
 				progressBar.SetValue(progress / 100.0)
-				
+
 				// Set button callbacks
 				transferID := parts[3]
 				cancelBtn.OnTapped = func() {
@@ -344,7 +344,7 @@ func (m *Manager) createTransfersTab() *fyne.Container {
 			}
 		},
 	)
-	
+
 	return container.NewVBox(
 		widget.NewLabel("File Transfers"),
 		widget.NewSeparator(),
@@ -374,17 +374,17 @@ func (m *Manager) createChatTab() *fyne.Container {
 				cont := obj.(*fyne.Container)
 				vbox := cont.Objects[0].(*fyne.Container)
 				unreadLabel := cont.Objects[1].(*widget.Label)
-				
+
 				nameLabel := vbox.Objects[0].(*widget.Label)
 				lastMsgLabel := vbox.Objects[1].(*widget.Label)
-				
+
 				nameLabel.SetText(parts[0])
 				lastMsgLabel.SetText(parts[1])
 				unreadLabel.SetText(parts[2])
 			}
 		},
 	)
-	
+
 	// Set selection callback
 	m.chatRoomsList.OnSelected = func(id widget.ListItemID) {
 		rooms := m.chat.GetRooms()
@@ -394,11 +394,11 @@ func (m *Manager) createChatTab() *fyne.Container {
 			m.chat.MarkRoomAsRead(m.currentRoom.ID)
 		}
 	}
-	
+
 	// Add global chat info
 	globalChatInfo := widget.NewLabel("Global chat connects all Shario users automatically")
 	globalChatInfo.Wrapping = fyne.TextWrapWord
-	
+
 	return container.NewVBox(
 		widget.NewLabel("Chat Rooms"),
 		globalChatInfo,
@@ -427,7 +427,7 @@ func (m *Manager) createMainContentArea() *fyne.Container {
 			}
 		},
 	)
-	
+
 	// Create message entry
 	m.messageEntry = widget.NewEntry()
 	m.messageEntry.SetPlaceHolder("Type a message to global chat...")
@@ -448,7 +448,7 @@ func (m *Manager) createMainContentArea() *fyne.Container {
 		m.chat.SendMessage(m.currentRoom.ID, text)
 		m.messageEntry.SetText("")
 	}
-	
+
 	// Create send button
 	sendBtn := widget.NewButton("Send", func() {
 		if m.currentRoom == nil {
@@ -466,18 +466,18 @@ func (m *Manager) createMainContentArea() *fyne.Container {
 		m.chat.SendMessage(m.currentRoom.ID, m.messageEntry.Text)
 		m.messageEntry.SetText("")
 	})
-	
+
 	// Create message input area
 	messageInput := container.NewBorder(
 		nil, nil, nil, sendBtn,
 		m.messageEntry,
 	)
-	
+
 	return container.NewBorder(
-		nil,          // top
-		messageInput, // bottom
-		nil,          // left
-		nil,          // right
+		nil,            // top
+		messageInput,   // bottom
+		nil,            // left
+		nil,            // right
 		m.messagesList, // center
 	)
 }
@@ -509,7 +509,7 @@ func (m *Manager) setupMenu() {
 			m.app.Quit()
 		}),
 	)
-	
+
 	// Settings menu
 	settingsMenu := fyne.NewMenu("Settings",
 		fyne.NewMenuItem("Change Nickname", func() {
@@ -522,14 +522,14 @@ func (m *Manager) setupMenu() {
 			m.showImportIdentityDialog()
 		}),
 	)
-	
+
 	// Help menu
 	helpMenu := fyne.NewMenu("Help",
 		fyne.NewMenuItem("About", func() {
 			m.showAboutDialog()
 		}),
 	)
-	
+
 	mainMenu := fyne.NewMainMenu(fileMenu, settingsMenu, helpMenu)
 	m.window.SetMainMenu(mainMenu)
 }
@@ -543,18 +543,18 @@ func (m *Manager) setupEventHandlers() {
 		// Refresh peers list in case nicknames changed
 		m.refreshPeers()
 	})
-	
+
 	m.chat.SetRoomUpdateHandler(func(room *chat.Room) {
 		m.refreshChatRooms()
 		// Refresh peers list in case nicknames changed
 		m.refreshPeers()
 	})
-	
+
 	// Transfer event handlers
 	m.transfer.SetTransferUpdateHandler(func(transfer *transfer.Transfer) {
 		m.refreshTransfers()
 	})
-	
+
 	m.transfer.SetTransferOfferHandler(func(transfer *transfer.Transfer) bool {
 		return m.showTransferOfferDialog(transfer)
 	})
@@ -574,12 +574,12 @@ func (m *Manager) refreshLoop() {
 func (m *Manager) refreshPeers() {
 	peers := m.network.GetPeers()
 	var peerStrings []string
-	
+
 	for _, peer := range peers {
 		peerString := fmt.Sprintf("%s|%s", peer.Nickname, peer.ID)
 		peerStrings = append(peerStrings, peerString)
 	}
-	
+
 	m.peersData.Set(peerStrings)
 }
 
@@ -587,13 +587,13 @@ func (m *Manager) refreshPeers() {
 func (m *Manager) refreshTransfers() {
 	transfers := m.transfer.GetTransfers()
 	var transferStrings []string
-	
+
 	for _, transfer := range transfers {
 		transferString := fmt.Sprintf("%s|%s|%.1f|%s",
 			transfer.Filename, transfer.Status, transfer.Progress, transfer.ID)
 		transferStrings = append(transferStrings, transferString)
 	}
-	
+
 	m.transfersData.Set(transferStrings)
 }
 
@@ -601,7 +601,7 @@ func (m *Manager) refreshTransfers() {
 func (m *Manager) refreshChatRooms() {
 	rooms := m.chat.GetRooms()
 	var roomStrings []string
-	
+
 	for _, room := range rooms {
 		lastMsg := "No messages"
 		if room.LastMessage != nil {
@@ -610,11 +610,11 @@ func (m *Manager) refreshChatRooms() {
 				lastMsg = lastMsg[:30] + "..."
 			}
 		}
-		
+
 		roomString := fmt.Sprintf("%s|%s|%d", room.Name, lastMsg, room.UnreadCount)
 		roomStrings = append(roomStrings, roomString)
 	}
-	
+
 	m.roomsData.Set(roomStrings)
 }
 
@@ -624,14 +624,14 @@ func (m *Manager) refreshMessages() {
 		m.messagesData.Set([]string{})
 		return
 	}
-	
+
 	var messageStrings []string
 	for _, msg := range m.currentRoom.Messages {
 		timeStr := msg.Timestamp.Format("15:04:05")
 		msgString := fmt.Sprintf("%s|%s|%s", msg.Sender, msg.Content, timeStr)
 		messageStrings = append(messageStrings, msgString)
 	}
-	
+
 	m.messagesData.Set(messageStrings)
 }
 
@@ -639,7 +639,7 @@ func (m *Manager) refreshMessages() {
 func (m *Manager) updateStatus() {
 	peerCount := m.network.GetPeerCount()
 	transferCount := m.transfer.GetActiveTransfers()
-	
+
 	status := fmt.Sprintf("Peers: %d | Transfers: %d", peerCount, transferCount)
 	m.statusLabel.SetText(status)
 }
@@ -651,7 +651,7 @@ func (m *Manager) startChatWithPeer(peerIDStr string) {
 		m.showError("Invalid peer ID", err)
 		return
 	}
-	
+
 	// Find peer info
 	peers := m.network.GetPeers()
 	var selectedPeer *network.Peer
@@ -661,19 +661,18 @@ func (m *Manager) startChatWithPeer(peerIDStr string) {
 			break
 		}
 	}
-	
+
 	if selectedPeer == nil {
 		m.showError("Peer not found", fmt.Errorf("peer %s not found", peerIDStr))
 		return
 	}
-	
+
 	// Create or get existing room
 	room := m.chat.CreateDirectRoom(peerID, selectedPeer.Nickname)
 	m.currentRoom = room
 	m.refreshMessages()
 	m.refreshChatRooms()
 }
-
 
 // connectToPeerManually attempts to connect to a peer using their multiaddress
 func (m *Manager) connectToPeerManually(addrStr string) {
@@ -683,14 +682,14 @@ func (m *Manager) connectToPeerManually(addrStr string) {
 		m.showError("Invalid address", fmt.Errorf("failed to parse multiaddress: %w", err))
 		return
 	}
-	
+
 	// Extract peer info
 	peerInfo, err := peer.AddrInfoFromP2pAddr(addr)
 	if err != nil {
 		m.showError("Invalid peer address", fmt.Errorf("failed to extract peer info: %w", err))
 		return
 	}
-	
+
 	// Attempt connection
 	go func() {
 		if err := m.network.GetHost().Connect(context.Background(), *peerInfo); err != nil {
@@ -709,7 +708,7 @@ func (m *Manager) sendFileToProj(peerIDStr string) {
 		m.showError("Invalid peer ID", err)
 		return
 	}
-	
+
 	// Show file picker
 	fileDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 		if err != nil {
@@ -718,17 +717,17 @@ func (m *Manager) sendFileToProj(peerIDStr string) {
 		}
 		if reader != nil {
 			defer reader.Close()
-			
+
 			// Get file path
 			filePath := reader.URI().Path()
-			
+
 			// Send file
 			if _, err := m.transfer.SendFile(peerID, filePath); err != nil {
 				m.showError("Failed to send file", err)
 			}
 		}
 	}, m.window)
-	
+
 	fileDialog.Show()
 }
 
@@ -754,7 +753,7 @@ func (m *Manager) showNicknameDialog() {
 	fmt.Printf("🎭 UI: Opening nickname dialog\n")
 	entry := widget.NewEntry()
 	entry.SetText(m.identity.GetNickname())
-	
+
 	dialog.ShowForm("Change Nickname", "Save", "Cancel", []*widget.FormItem{
 		widget.NewFormItem("Nickname", entry),
 	}, func(accepted bool) {
@@ -790,9 +789,9 @@ func (m *Manager) showConnectToPeerDialog() {
 	peerAddrEntry := widget.NewEntry()
 	peerAddrEntry.SetPlaceHolder("/ip4/192.168.1.100/tcp/12345/p2p/QmYWdN8PKoFFNFBNCeM6VsDrzzs1QQacLsmWAx3WLHTtGR")
 	peerAddrEntry.MultiLine = true
-	
+
 	helpText := widget.NewLabel("Enter a peer's multiaddress. You can get this from another Shario instance's console output.")
-	
+
 	dialog.ShowForm("Connect to Peer", "Connect", "Cancel", []*widget.FormItem{
 		widget.NewFormItem("Peer Address", peerAddrEntry),
 		widget.NewFormItem("Help", helpText),
@@ -805,8 +804,8 @@ func (m *Manager) showConnectToPeerDialog() {
 
 // showAboutDialog shows the about dialog
 func (m *Manager) showAboutDialog() {
-	dialog.ShowInformation("About Shario", 
-		"Shario v1.0.0\n\nA cross-platform P2P file sharing application\nwith real-time chat capabilities.\n\nBuilt with Go, libp2p, and Fyne.", 
+	dialog.ShowInformation("About Shario",
+		"Shario v1.0.0\n\nA cross-platform P2P file sharing application\nwith real-time chat capabilities.\n\nBuilt with Go, libp2p, and Fyne.",
 		m.window)
 }
 
@@ -821,12 +820,12 @@ func (m *Manager) openTransferLocation(transferID string) {
 			break
 		}
 	}
-	
+
 	if targetTransfer == nil {
 		m.showError("Transfer not found", fmt.Errorf("transfer %s not found", transferID))
 		return
 	}
-	
+
 	// Check if transfer is completed and file exists
 	if targetTransfer.Status == "completed" && targetTransfer.FilePath != "" {
 		// Try to open the file
@@ -853,11 +852,11 @@ func (m *Manager) openTransferLocation(transferID string) {
 // openFileInSystem opens a file or folder using the system's default application
 func (m *Manager) openFileInSystem(path string) error {
 	fmt.Printf("🗂️ UI: Opening system path: %s\n", path)
-	
+
 	// Cross-platform file opening
 	var cmd string
 	var args []string
-	
+
 	switch runtime.GOOS {
 	case "darwin": // macOS
 		cmd = "open"
@@ -871,7 +870,7 @@ func (m *Manager) openFileInSystem(path string) error {
 	default:
 		return fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
 	}
-	
+
 	exec := exec.Command(cmd, args...)
 	return exec.Start()
 }
@@ -879,18 +878,18 @@ func (m *Manager) openFileInSystem(path string) error {
 // showTransferOfferDialog shows a transfer offer dialog
 func (m *Manager) showTransferOfferDialog(transfer *transfer.Transfer) bool {
 	fmt.Printf("🎯 UI: Showing transfer offer dialog for file: %s\n", transfer.Filename)
-	
+
 	content := fmt.Sprintf("Peer %s wants to send you a file:\n\nFilename: %s\nSize: %d bytes\n\nDo you want to accept this transfer?",
 		transfer.PeerNickname, transfer.Filename, transfer.Size)
-	
+
 	// Use a channel to wait for user response
 	responseChan := make(chan bool, 1)
-	
+
 	dialog.ShowConfirm("File Transfer Request", content, func(accepted bool) {
 		fmt.Printf("🎯 UI: User clicked on transfer dialog, accepted: %t\n", accepted)
 		responseChan <- accepted
 	}, m.window)
-	
+
 	// Wait for user response
 	accepted := <-responseChan
 	fmt.Printf("🎯 UI: Transfer dialog result: %t\n", accepted)

@@ -28,7 +28,7 @@ func (nn *networkNotifiee) Connected(n network.Network, conn network.Conn) {
 	log.Printf("🔗 PEER CONNECTED: %s", peerID.String())
 	log.Printf("  Remote address: %s", conn.RemoteMultiaddr().String())
 	log.Printf("  Local address: %s", conn.LocalMultiaddr().String())
-	
+
 	// Create peer info
 	peer := &Peer{
 		ID:          peerID.String(),
@@ -37,11 +37,11 @@ func (nn *networkNotifiee) Connected(n network.Network, conn network.Conn) {
 		PeerID:      peerID,
 		Addresses:   []multiaddr.Multiaddr{conn.RemoteMultiaddr()},
 	}
-	
+
 	// Add to peers map (check for duplicates)
 	manager := (*Manager)(nn)
 	manager.peersMutex.Lock()
-	
+
 	// Check if peer already exists
 	if existingPeer, exists := manager.peers[peerID]; exists {
 		log.Printf("  Peer already exists, updating connection info")
@@ -51,17 +51,17 @@ func (nn *networkNotifiee) Connected(n network.Network, conn network.Conn) {
 		log.Printf("  Updated existing peer, no new chat notification needed")
 		return
 	}
-	
+
 	// Add new peer
 	manager.peers[peerID] = peer
 	totalPeers := len(manager.peers)
 	manager.peersMutex.Unlock()
-	
+
 	log.Printf("  Total peers now: %d", totalPeers)
-	
+
 	// Notify handlers (only for new peers)
 	manager.notifyPeerConnected(peer)
-	
+
 	log.Printf("  New peer added to chat system")
 }
 
@@ -69,23 +69,23 @@ func (nn *networkNotifiee) Connected(n network.Network, conn network.Conn) {
 func (nn *networkNotifiee) Disconnected(n network.Network, conn network.Conn) {
 	peerID := conn.RemotePeer()
 	log.Printf("🔗 PEER DISCONNECTED: %s (connection: %s)", peerID.String(), conn.RemoteMultiaddr().String())
-	
+
 	manager := (*Manager)(nn)
-	
+
 	// Check if we still have other connections to this peer
 	if manager.host.Network().Connectedness(peerID) == network.Connected {
 		log.Printf("🔗 Still have other connections to peer %s, keeping peer info", peerID.String())
 		return
 	}
-	
+
 	// Remove from peers map only if completely disconnected
 	manager.peersMutex.Lock()
 	delete(manager.peers, peerID)
 	peerCount := len(manager.peers)
 	manager.peersMutex.Unlock()
-	
+
 	log.Printf("🔗 Peer %s fully disconnected, total peers: %d", peerID.String(), peerCount)
-	
+
 	// Notify handlers
 	manager.notifyPeerDisconnected(peerID)
 }
@@ -99,13 +99,13 @@ type discoveryNotifiee struct {
 func (dn *discoveryNotifiee) HandlePeerFound(peerInfo peer.AddrInfo) {
 	log.Printf("🔍 mDNS Discovery: Found peer %s", peerInfo.ID.String())
 	log.Printf("  Peer addresses: %v", peerInfo.Addrs)
-	
+
 	// Don't connect to ourselves
 	if peerInfo.ID == dn.manager.host.ID() {
 		log.Printf("  Skipping self-connection")
 		return
 	}
-	
+
 	// Connect to the discovered peer
 	log.Printf("  Attempting connection to peer %s...", peerInfo.ID.String())
 	if err := dn.manager.host.Connect(dn.manager.ctx, peerInfo); err != nil {

@@ -26,15 +26,15 @@ type Message struct {
 
 // Room represents a chat room
 type Room struct {
-	ID          string             `json:"id"`
-	Name        string             `json:"name"`
-	Type        string             `json:"type"` // "direct", "group"
+	ID           string             `json:"id"`
+	Name         string             `json:"name"`
+	Type         string             `json:"type"` // "direct", "group"
 	Participants map[peer.ID]string `json:"participants"`
-	Messages    []*Message         `json:"messages"`
-	CreatedAt   time.Time          `json:"created_at"`
-	LastMessage *Message           `json:"last_message,omitempty"`
-	UnreadCount int                `json:"unread_count"`
-	mutex       sync.RWMutex
+	Messages     []*Message         `json:"messages"`
+	CreatedAt    time.Time          `json:"created_at"`
+	LastMessage  *Message           `json:"last_message,omitempty"`
+	UnreadCount  int                `json:"unread_count"`
+	mutex        sync.RWMutex
 }
 
 // ChatMessage represents a chat protocol message
@@ -58,13 +58,13 @@ type Manager struct {
 	network *network.Manager
 	rooms   map[string]*Room
 	mutex   sync.RWMutex
-	
+
 	// Global room
 	globalRoom *Room
-	
+
 	// Current user info
 	nickname string
-	
+
 	// Event handlers
 	onMessageReceived func(*Message)
 	onRoomUpdated     func(*Room)
@@ -77,20 +77,20 @@ func New(networkMgr *network.Manager) *Manager {
 		network: networkMgr,
 		rooms:   make(map[string]*Room),
 	}
-	
+
 	// Register as network event handler
 	networkMgr.AddEventHandler("chat", mgr)
-	
+
 	return mgr
 }
 
 // Start initializes the chat manager
 func (m *Manager) Start() error {
 	log.Println("Chat manager started")
-	
+
 	// Create global chat room
 	m.createGlobalRoom()
-	
+
 	return nil
 }
 
@@ -99,11 +99,11 @@ func (m *Manager) SendMessage(roomID, content string) error {
 	m.mutex.RLock()
 	room, exists := m.rooms[roomID]
 	m.mutex.RUnlock()
-	
+
 	if !exists {
 		return fmt.Errorf("room not found: %s", roomID)
 	}
-	
+
 	message := &Message{
 		ID:        fmt.Sprintf("msg_%d", time.Now().UnixNano()),
 		Content:   content,
@@ -113,13 +113,13 @@ func (m *Manager) SendMessage(roomID, content string) error {
 		RoomID:    roomID,
 		Type:      MsgTypeText,
 	}
-	
+
 	// Add to room
 	room.mutex.Lock()
 	room.Messages = append(room.Messages, message)
 	room.LastMessage = message
 	room.mutex.Unlock()
-	
+
 	// Send to all participants (except for local test rooms)
 	if room.Type != "local_test" {
 		participantCount := 0
@@ -134,31 +134,31 @@ func (m *Manager) SendMessage(roomID, content string) error {
 	} else {
 		log.Printf("📝 Local test message (not sent to network)")
 	}
-	
+
 	// Notify handlers
 	if m.onMessageReceived != nil {
 		go m.onMessageReceived(message)
 	}
-	
+
 	if m.onRoomUpdated != nil {
 		go m.onRoomUpdated(room)
 	}
-	
+
 	return nil
 }
 
 // CreateDirectRoom creates a direct chat room with a peer
 func (m *Manager) CreateDirectRoom(peerID peer.ID, peerNickname string) *Room {
 	roomID := m.generateDirectRoomID(m.network.GetHost().ID(), peerID)
-	
+
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	
+
 	// Check if room already exists
 	if room, exists := m.rooms[roomID]; exists {
 		return room
 	}
-	
+
 	room := &Room{
 		ID:   roomID,
 		Name: peerNickname,
@@ -170,22 +170,22 @@ func (m *Manager) CreateDirectRoom(peerID peer.ID, peerNickname string) *Room {
 		Messages:  make([]*Message, 0),
 		CreatedAt: time.Now(),
 	}
-	
+
 	m.rooms[roomID] = room
-	
+
 	// Send join message to peer
 	m.sendJoinMessage(peerID, room)
-	
+
 	return room
 }
 
 // CreateLocalTestRoom creates a local-only test room that doesn't send to peers
 func (m *Manager) CreateLocalTestRoom(roomName string) *Room {
 	roomID := fmt.Sprintf("local_test_%d", time.Now().UnixNano())
-	
+
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	
+
 	room := &Room{
 		ID:   roomID,
 		Name: roomName,
@@ -196,9 +196,9 @@ func (m *Manager) CreateLocalTestRoom(roomName string) *Room {
 		Messages:  make([]*Message, 0),
 		CreatedAt: time.Now(),
 	}
-	
+
 	m.rooms[roomID] = room
-	
+
 	// Add a welcome message
 	welcomeMsg := &Message{
 		ID:        fmt.Sprintf("welcome_%d", time.Now().UnixNano()),
@@ -209,10 +209,10 @@ func (m *Manager) CreateLocalTestRoom(roomName string) *Room {
 		RoomID:    roomID,
 		Type:      MsgTypeSystem,
 	}
-	
+
 	room.Messages = append(room.Messages, welcomeMsg)
 	room.LastMessage = welcomeMsg
-	
+
 	return room
 }
 
@@ -220,12 +220,12 @@ func (m *Manager) CreateLocalTestRoom(roomName string) *Room {
 func (m *Manager) GetRooms() []*Room {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
-	
+
 	rooms := make([]*Room, 0, len(m.rooms))
 	for _, room := range m.rooms {
 		rooms = append(rooms, room)
 	}
-	
+
 	return rooms
 }
 
@@ -233,7 +233,7 @@ func (m *Manager) GetRooms() []*Room {
 func (m *Manager) GetRoom(roomID string) (*Room, bool) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
-	
+
 	room, exists := m.rooms[roomID]
 	return room, exists
 }
@@ -242,7 +242,7 @@ func (m *Manager) GetRoom(roomID string) (*Room, bool) {
 func (m *Manager) GetActiveRooms() int {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
-	
+
 	return len(m.rooms)
 }
 
@@ -250,7 +250,7 @@ func (m *Manager) GetActiveRooms() int {
 func (m *Manager) GetGlobalRoom() *Room {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
-	
+
 	return m.globalRoom
 }
 
@@ -258,9 +258,9 @@ func (m *Manager) GetGlobalRoom() *Room {
 func (m *Manager) SetNickname(nickname string) {
 	oldNickname := m.nickname
 	m.nickname = nickname
-	
+
 	log.Printf("🎭 Chat SetNickname: '%s' -> '%s'", oldNickname, nickname)
-	
+
 	// If nickname actually changed, broadcast it to all peers
 	if oldNickname != "" && oldNickname != nickname {
 		log.Printf("🎭 Chat SetNickname: Broadcasting change '%s' -> '%s'", oldNickname, nickname)
@@ -295,11 +295,11 @@ func (m *Manager) SendTypingIndicator(roomID string, isTyping bool) {
 	m.mutex.RLock()
 	room, exists := m.rooms[roomID]
 	m.mutex.RUnlock()
-	
+
 	if !exists {
 		return
 	}
-	
+
 	msg := ChatMessage{
 		Type: MsgTypeTyping,
 		Data: map[string]interface{}{
@@ -307,7 +307,7 @@ func (m *Manager) SendTypingIndicator(roomID string, isTyping bool) {
 			"is_typing": isTyping,
 		},
 	}
-	
+
 	// Send to all participants
 	for peerID := range room.Participants {
 		if peerID != m.network.GetHost().ID() {
@@ -321,15 +321,15 @@ func (m *Manager) MarkRoomAsRead(roomID string) {
 	m.mutex.RLock()
 	room, exists := m.rooms[roomID]
 	m.mutex.RUnlock()
-	
+
 	if !exists {
 		return
 	}
-	
+
 	room.mutex.Lock()
 	room.UnreadCount = 0
 	room.mutex.Unlock()
-	
+
 	if m.onRoomUpdated != nil {
 		go m.onRoomUpdated(room)
 	}
@@ -339,7 +339,7 @@ func (m *Manager) MarkRoomAsRead(roomID string) {
 func (m *Manager) createGlobalRoom() {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	
+
 	globalRoom := &Room{
 		ID:   "global",
 		Name: "Global Chat",
@@ -350,7 +350,7 @@ func (m *Manager) createGlobalRoom() {
 		Messages:  make([]*Message, 0),
 		CreatedAt: time.Now(),
 	}
-	
+
 	// Add welcome message
 	welcomeMsg := &Message{
 		ID:        fmt.Sprintf("welcome_%d", time.Now().UnixNano()),
@@ -361,20 +361,20 @@ func (m *Manager) createGlobalRoom() {
 		RoomID:    "global",
 		Type:      MsgTypeSystem,
 	}
-	
+
 	globalRoom.Messages = append(globalRoom.Messages, welcomeMsg)
 	globalRoom.LastMessage = welcomeMsg
-	
+
 	m.rooms["global"] = globalRoom
 	m.globalRoom = globalRoom
-	
+
 	log.Printf("Created global chat room")
 }
 
 // OnPeerConnected handles peer connection events
 func (m *Manager) OnPeerConnected(peer *network.Peer) {
 	log.Printf("Chat: Peer connected: %s", peer.ID)
-	
+
 	// Add peer to global room
 	m.addPeerToGlobalRoom(peer)
 }
@@ -383,20 +383,20 @@ func (m *Manager) OnPeerConnected(peer *network.Peer) {
 func (m *Manager) addPeerToGlobalRoom(peer *network.Peer) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	
+
 	if m.globalRoom == nil {
 		return
 	}
-	
+
 	// Check if peer is already in the global room
 	if _, exists := m.globalRoom.Participants[peer.PeerID]; exists {
 		log.Printf("Peer %s already in global chat, skipping duplicate addition", peer.Nickname)
 		return
 	}
-	
+
 	// Add peer to global room participants
 	m.globalRoom.Participants[peer.PeerID] = peer.Nickname
-	
+
 	// Add system message about peer joining
 	joinMsg := &Message{
 		ID:        fmt.Sprintf("join_%d", time.Now().UnixNano()),
@@ -407,26 +407,26 @@ func (m *Manager) addPeerToGlobalRoom(peer *network.Peer) {
 		RoomID:    "global",
 		Type:      MsgTypeSystem,
 	}
-	
+
 	m.globalRoom.Messages = append(m.globalRoom.Messages, joinMsg)
 	m.globalRoom.LastMessage = joinMsg
-	
+
 	// Notify UI to refresh
 	if m.onMessageReceived != nil {
 		go m.onMessageReceived(joinMsg)
 	}
-	
+
 	if m.onRoomUpdated != nil {
 		go m.onRoomUpdated(m.globalRoom)
 	}
-	
+
 	log.Printf("Added peer %s to global chat", peer.Nickname)
 }
 
 // OnPeerDisconnected handles peer disconnection events
 func (m *Manager) OnPeerDisconnected(peerID peer.ID) {
 	log.Printf("Chat: Peer disconnected: %s", peerID)
-	
+
 	// Add system message to rooms with this peer
 	m.mutex.RLock()
 	var affectedRooms []*Room
@@ -436,7 +436,7 @@ func (m *Manager) OnPeerDisconnected(peerID peer.ID) {
 		}
 	}
 	m.mutex.RUnlock()
-	
+
 	for _, room := range affectedRooms {
 		m.addSystemMessage(room, fmt.Sprintf("%s has disconnected", room.Participants[peerID]))
 	}
@@ -447,17 +447,17 @@ func (m *Manager) OnMessage(peerID peer.ID, protocol protocol.ID, data []byte) {
 	if protocol != network.ChatProtocol {
 		return
 	}
-	
+
 	log.Printf("📥 Received message from peer %s, size: %d bytes", peerID.String(), len(data))
-	
+
 	var msg ChatMessage
 	if err := json.Unmarshal(data, &msg); err != nil {
 		log.Printf("Failed to unmarshal chat message: %v", err)
 		return
 	}
-	
+
 	log.Printf("📥 Message type: %s", msg.Type)
-	
+
 	switch msg.Type {
 	case MsgTypeText:
 		m.handleTextMessage(peerID, msg)
@@ -490,7 +490,7 @@ func (m *Manager) sendMessageToPeer(peerID peer.ID, message *Message) {
 			"type":      message.Type,
 		},
 	}
-	
+
 	m.sendChatMessage(peerID, msg)
 }
 
@@ -501,7 +501,7 @@ func (m *Manager) sendChatMessage(peerID peer.ID, msg ChatMessage) {
 		log.Printf("Failed to marshal chat message: %v", err)
 		return
 	}
-	
+
 	if err := m.network.SendMessage(peerID, network.ChatProtocol, data); err != nil {
 		log.Printf("Failed to send chat message to peer %s: %v", peerID, err)
 	}
@@ -519,31 +519,31 @@ func (m *Manager) sendJoinMessage(peerID peer.ID, room *Room) {
 			"participants": m.serializeParticipants(room.Participants),
 		},
 	}
-	
+
 	m.sendChatMessage(peerID, msg)
 }
 
 // handleTextMessage handles incoming text messages
 func (m *Manager) handleTextMessage(peerID peer.ID, msg ChatMessage) {
 	data := msg.Data
-	
+
 	senderID, err := peer.Decode(data["sender_id"].(string))
 	if err != nil {
 		log.Printf("Failed to decode sender ID: %v", err)
 		return
 	}
-	
+
 	// Get the current nickname for this peer (not the one sent in the message)
 	currentNickname := m.getCurrentPeerNickname(senderID)
 	sentNickname := data["sender"].(string)
-	
+
 	if currentNickname == "" {
 		currentNickname = sentNickname // fallback to sent nickname
 		log.Printf("📥 Using sent nickname '%s' for peer %s (no current nickname found)", sentNickname, senderID.String())
 	} else if currentNickname != sentNickname {
 		log.Printf("📥 Updated nickname for peer %s: sent='%s' current='%s'", senderID.String(), sentNickname, currentNickname)
 	}
-	
+
 	message := &Message{
 		ID:        data["id"].(string),
 		Content:   data["content"].(string),
@@ -553,12 +553,12 @@ func (m *Manager) handleTextMessage(peerID peer.ID, msg ChatMessage) {
 		RoomID:    data["room_id"].(string),
 		Type:      data["type"].(string),
 	}
-	
+
 	// Find or create room
 	m.mutex.RLock()
 	room, exists := m.rooms[message.RoomID]
 	m.mutex.RUnlock()
-	
+
 	if !exists {
 		// Create new room
 		room = &Room{
@@ -572,24 +572,24 @@ func (m *Manager) handleTextMessage(peerID peer.ID, msg ChatMessage) {
 			Messages:  make([]*Message, 0),
 			CreatedAt: time.Now(),
 		}
-		
+
 		m.mutex.Lock()
 		m.rooms[message.RoomID] = room
 		m.mutex.Unlock()
 	}
-	
+
 	// Add message to room
 	room.mutex.Lock()
 	room.Messages = append(room.Messages, message)
 	room.LastMessage = message
 	room.UnreadCount++
 	room.mutex.Unlock()
-	
+
 	// Notify handlers
 	if m.onMessageReceived != nil {
 		go m.onMessageReceived(message)
 	}
-	
+
 	if m.onRoomUpdated != nil {
 		go m.onRoomUpdated(room)
 	}
@@ -604,11 +604,11 @@ func (m *Manager) handleSystemMessage(peerID peer.ID, msg ChatMessage) {
 func (m *Manager) handleJoinMessage(peerID peer.ID, msg ChatMessage) {
 	data := msg.Data
 	roomID := data["room_id"].(string)
-	
+
 	// If this is for the global room, just add the peer to existing global room
 	if roomID == "global" {
 		log.Printf("Received global room join message from peer %s", peerID.String())
-		
+
 		// Get peer nickname from network manager
 		if peers := m.network.GetPeers(); len(peers) > 0 {
 			for _, peer := range peers {
@@ -620,7 +620,7 @@ func (m *Manager) handleJoinMessage(peerID peer.ID, msg ChatMessage) {
 		}
 		return
 	}
-	
+
 	// Handle other room types (direct rooms, etc.)
 	room := &Room{
 		ID:        roomID,
@@ -629,7 +629,7 @@ func (m *Manager) handleJoinMessage(peerID peer.ID, msg ChatMessage) {
 		CreatedAt: time.Unix(int64(data["created_at"].(float64)), 0),
 		Messages:  make([]*Message, 0),
 	}
-	
+
 	// Deserialize participants
 	participants := data["participants"].(map[string]interface{})
 	room.Participants = make(map[peer.ID]string)
@@ -638,14 +638,14 @@ func (m *Manager) handleJoinMessage(peerID peer.ID, msg ChatMessage) {
 			room.Participants[id] = nickname.(string)
 		}
 	}
-	
+
 	m.mutex.Lock()
 	m.rooms[room.ID] = room
 	m.mutex.Unlock()
-	
+
 	// Add system message
 	m.addSystemMessage(room, fmt.Sprintf("Joined chat with %s", room.Participants[peerID]))
-	
+
 	if m.onRoomUpdated != nil {
 		go m.onRoomUpdated(room)
 	}
@@ -661,7 +661,7 @@ func (m *Manager) handleTypingIndicator(peerID peer.ID, msg ChatMessage) {
 	data := msg.Data
 	roomID := data["room_id"].(string)
 	isTyping := data["is_typing"].(bool)
-	
+
 	if m.onTypingIndicator != nil {
 		go m.onTypingIndicator(roomID, peerID, isTyping)
 	}
@@ -670,16 +670,16 @@ func (m *Manager) handleTypingIndicator(peerID peer.ID, msg ChatMessage) {
 // broadcastNicknameChange sends nickname change to all connected peers
 func (m *Manager) broadcastNicknameChange(oldNickname, newNickname string) {
 	log.Printf("🔄 Broadcasting nickname change: %s -> %s", oldNickname, newNickname)
-	
+
 	// Get all connected peers
 	peers := m.network.GetPeers()
 	if len(peers) == 0 {
 		log.Printf("🔄 No peers to notify of nickname change")
 		return
 	}
-	
+
 	log.Printf("🔄 Notifying %d peers of nickname change", len(peers))
-	
+
 	// Create nickname change message
 	msg := ChatMessage{
 		Type: MsgTypeNicknameChange,
@@ -689,13 +689,13 @@ func (m *Manager) broadcastNicknameChange(oldNickname, newNickname string) {
 			"peer_id":      m.network.GetHost().ID().String(),
 		},
 	}
-	
+
 	// Send to all peers
 	for _, peer := range peers {
 		log.Printf("🔄 Sending nickname change to peer %s", peer.Nickname)
 		go m.sendChatMessage(peer.PeerID, msg)
 	}
-	
+
 	// Update global room participants
 	m.updateNicknameInRooms(oldNickname, newNickname)
 	log.Printf("🔄 Nickname change broadcast complete")
@@ -706,15 +706,15 @@ func (m *Manager) handleNicknameChange(peerID peer.ID, msg ChatMessage) {
 	data := msg.Data
 	oldNickname := data["old_nickname"].(string)
 	newNickname := data["new_nickname"].(string)
-	
+
 	log.Printf("📥 Nickname change from peer %s: %s -> %s", peerID.String(), oldNickname, newNickname)
-	
+
 	// Update peer nickname in network manager
 	m.updatePeerNickname(peerID, newNickname)
-	
+
 	// Update nickname in all rooms for this specific peer
 	m.updatePeerNicknameInRooms(peerID, newNickname)
-	
+
 	// Add system message to global room
 	if m.globalRoom != nil {
 		systemMsg := &Message{
@@ -726,17 +726,17 @@ func (m *Manager) handleNicknameChange(peerID peer.ID, msg ChatMessage) {
 			RoomID:    "global",
 			Type:      MsgTypeSystem,
 		}
-		
+
 		m.globalRoom.mutex.Lock()
 		m.globalRoom.Messages = append(m.globalRoom.Messages, systemMsg)
 		m.globalRoom.LastMessage = systemMsg
 		m.globalRoom.mutex.Unlock()
-		
+
 		// Notify UI
 		if m.onMessageReceived != nil {
 			go m.onMessageReceived(systemMsg)
 		}
-		
+
 		if m.onRoomUpdated != nil {
 			go m.onRoomUpdated(m.globalRoom)
 		}
@@ -759,9 +759,9 @@ func (m *Manager) updatePeerNickname(peerID peer.ID, newNickname string) {
 func (m *Manager) updateNicknameInRooms(oldNickname, newNickname string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	
+
 	updatedRooms := 0
-	
+
 	for _, room := range m.rooms {
 		room.mutex.Lock()
 		// Update participant nickname for any peer with the old nickname
@@ -774,7 +774,7 @@ func (m *Manager) updateNicknameInRooms(oldNickname, newNickname string) {
 		}
 		room.mutex.Unlock()
 	}
-	
+
 	log.Printf("Updated nickname in %d rooms", updatedRooms)
 }
 
@@ -782,9 +782,9 @@ func (m *Manager) updateNicknameInRooms(oldNickname, newNickname string) {
 func (m *Manager) updatePeerNicknameInRooms(peerID peer.ID, newNickname string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	
+
 	updatedRooms := 0
-	
+
 	for _, room := range m.rooms {
 		room.mutex.Lock()
 		if _, exists := room.Participants[peerID]; exists {
@@ -793,9 +793,9 @@ func (m *Manager) updatePeerNicknameInRooms(peerID peer.ID, newNickname string) 
 		}
 		room.mutex.Unlock()
 	}
-	
+
 	log.Printf("Updated peer %s nickname to %s in %d rooms", peerID.String(), newNickname, updatedRooms)
-	
+
 	// Refresh UI
 	if m.onRoomUpdated != nil && m.globalRoom != nil {
 		go m.onRoomUpdated(m.globalRoom)
@@ -812,7 +812,7 @@ func (m *Manager) getCurrentPeerNickname(peerID peer.ID) string {
 			return peer.Nickname
 		}
 	}
-	
+
 	// Fallback: check global room participants
 	if m.globalRoom != nil {
 		m.globalRoom.mutex.RLock()
@@ -823,7 +823,7 @@ func (m *Manager) getCurrentPeerNickname(peerID peer.ID) string {
 			return nickname
 		}
 	}
-	
+
 	// No nickname found
 	log.Printf("🔍 No current nickname found for peer %s", peerID.String())
 	return ""
@@ -840,12 +840,12 @@ func (m *Manager) addSystemMessage(room *Room, content string) {
 		RoomID:    room.ID,
 		Type:      MsgTypeSystem,
 	}
-	
+
 	room.mutex.Lock()
 	room.Messages = append(room.Messages, message)
 	room.LastMessage = message
 	room.mutex.Unlock()
-	
+
 	if m.onMessageReceived != nil {
 		go m.onMessageReceived(message)
 	}
