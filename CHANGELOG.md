@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed release workflow cross-compilation issues:
+  - Removed problematic Linux ARM64 cross-compilation (requires complex toolchain setup)
+  - Simplified build matrix to native compilation only
+  - Fixed CGO_ENABLED configuration for each platform
+  - Added proper conditional file handling for macOS builds
+
 ## [0.0.1-rc.3] - 2025-07-10
 
 ### Fixed

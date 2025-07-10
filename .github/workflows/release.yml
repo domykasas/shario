@@ -16,26 +16,25 @@ jobs:
             goarch: amd64
             binary_suffix: ''
             archive_type: tar.gz
-          - os: ubuntu-latest
-            goos: linux
-            goarch: arm64
-            binary_suffix: ''
-            archive_type: tar.gz
+            cgo_enabled: "1"
           - os: windows-latest
             goos: windows
             goarch: amd64
             binary_suffix: .exe
             archive_type: zip
+            cgo_enabled: "1"
           - os: macos-latest
             goos: darwin
             goarch: amd64
             binary_suffix: ''
             archive_type: tar.gz
+            cgo_enabled: "1"
           - os: macos-latest
             goos: darwin
             goarch: arm64
             binary_suffix: ''
             archive_type: tar.gz
+            cgo_enabled: "1"
 
     steps:
     - uses: actions/checkout@v4
@@ -77,10 +76,11 @@ jobs:
       env:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
-        CGO_ENABLED: 1
+        CGO_ENABLED: ${{ matrix.cgo_enabled }}
       run: |
         mkdir -p dist
         BINARY_NAME=shario-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.binary_suffix }}
+        echo "Building for ${{ matrix.goos }}/${{ matrix.goarch }} with CGO_ENABLED=${{ matrix.cgo_enabled }}"
         go build -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" -o dist/$BINARY_NAME .
 
     - name: Create archive
@@ -245,8 +245,12 @@ jobs:
         VERSION=${{ steps.get_version.outputs.VERSION }}
         
         # For now, just rename the tar.gz as we'd need macOS to create proper DMG
-        cp dist/shario-darwin-amd64/shario-${VERSION}-darwin-amd64.tar.gz shario-${VERSION}-darwin-amd64.tar.gz
-        cp dist/shario-darwin-arm64/shario-${VERSION}-darwin-arm64.tar.gz shario-${VERSION}-darwin-arm64.tar.gz
+        if [ -f "dist/shario-darwin-amd64/shario-${VERSION}-darwin-amd64.tar.gz" ]; then
+          cp dist/shario-darwin-amd64/shario-${VERSION}-darwin-amd64.tar.gz shario-${VERSION}-darwin-amd64.tar.gz
+        fi
+        if [ -f "dist/shario-darwin-arm64/shario-${VERSION}-darwin-arm64.tar.gz" ]; then
+          cp dist/shario-darwin-arm64/shario-${VERSION}-darwin-arm64.tar.gz shario-${VERSION}-darwin-arm64.tar.gz
+        fi
 
     - name: Upload installer artifacts
       uses: actions/upload-artifact@v4
@@ -303,7 +307,6 @@ jobs:
         echo "" >> release_notes.md
         echo "### Binaries" >> release_notes.md
         echo "- **Linux (amd64)**: \`shario-${VERSION}-linux-amd64.tar.gz\`" >> release_notes.md
-        echo "- **Linux (arm64)**: \`shario-${VERSION}-linux-arm64.tar.gz\`" >> release_notes.md
         echo "- **Windows (amd64)**: \`shario-${VERSION}-windows-amd64.zip\`" >> release_notes.md
         echo "- **macOS (amd64)**: \`shario-${VERSION}-darwin-amd64.tar.gz\`" >> release_notes.md
         echo "- **macOS (arm64)**: \`shario-${VERSION}-darwin-arm64.tar.gz\`" >> release_notes.md
