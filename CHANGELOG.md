@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.2] - 2025-07-10
+
+### Fixed
+- Fixed RPM build dependencies issue:
+  - Removed unnecessary BuildRequires: gcc for pre-built binary packaging
+  - Added AutoReqProv: no to disable automatic dependency detection
+  - Changed %prep from "%setup -q -n ." to "%setup -q -c" for proper archive extraction
+  - Used proper install command with permissions for binary installation
+  - Fixed RPM spec file to properly handle pre-built Go binaries
+
+### Changed
+- Updated version references throughout documentation to 1.0.0-rc.2
+
 ## [1.0.0-rc.1] - 2025-07-10
 
 ### Fixed

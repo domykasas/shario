@@ -203,24 +203,30 @@ jobs:
         URL: https://github.com/domykasas/shario
         Source0: shario-VERSION_TAG_PLACEHOLDER-linux-amd64.tar.gz
         
-        BuildRequires: gcc
+        # No BuildRequires needed for pre-built binary
         Requires: mesa-libGL libXcursor libXrandr libXinerama libXi libXxf86vm alsa-lib
+        
+        # Disable automatic dependency detection since we're packaging a pre-built Go binary
+        AutoReqProv: no
         
         %description
         Shario is a cross-platform peer-to-peer file sharing application
         with real-time chat capabilities. Built with Go, libp2p, and Fyne.
         
         %prep
-        %setup -q -n .
+        %setup -q -c
         
         %build
-        # Binary is pre-built
+        # Binary is pre-built, no compilation needed
         
         %install
         mkdir -p %{buildroot}/usr/bin
         mkdir -p %{buildroot}/usr/share/applications
-        cp shario-linux-amd64 %{buildroot}/usr/bin/shario
         
+        # Install the binary
+        install -m 755 shario-linux-amd64 %{buildroot}/usr/bin/shario
+        
+        # Install desktop file
         cat > %{buildroot}/usr/share/applications/shario.desktop << 'DESKTOP_EOF'
         [Desktop Entry]
         Name=Shario
@@ -233,7 +239,7 @@ jobs:
         DESKTOP_EOF
         
         %files
-        /usr/bin/shario
+        %attr(755,root,root) /usr/bin/shario
         /usr/share/applications/shario.desktop
         
         %changelog
