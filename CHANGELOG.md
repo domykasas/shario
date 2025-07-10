@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.4] - 2025-07-10
+
+### Fixed
+- Fixed Go code formatting issues (recurring CI problem):
+  - Ran `go fmt ./...` to format all Go source files again
+  - Ensures consistent code formatting across the codebase
+  - Resolves GitHub Actions formatting check failures
+- Fixed GitHub release asset upload duplicates:
+  - Replaced overlapping glob patterns with specific file paths
+  - Prevents duplicate file uploads that cause "Not Found" errors
+  - More reliable and cleaner release asset management
+
+### Changed
+- Updated version references throughout documentation to 1.0.0-rc.4
+
 ## [1.0.0-rc.3] - 2025-07-10
 
 ### Fixed

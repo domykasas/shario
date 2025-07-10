@@ -349,7 +349,12 @@ jobs:
         draft: false
         prerelease: ${{ contains(steps.get_version.outputs.VERSION, 'rc') }}
         files: |
-          artifacts/shario-*/shario-${{ steps.get_version.outputs.VERSION }}-*
-          artifacts/installers/*
+          artifacts/shario-windows-amd64/shario-${{ steps.get_version.outputs.VERSION }}-windows-amd64.zip
+          artifacts/shario-linux-amd64/shario-${{ steps.get_version.outputs.VERSION }}-linux-amd64.tar.gz
+          artifacts/shario-darwin-amd64/shario-${{ steps.get_version.outputs.VERSION }}-darwin-amd64.tar.gz
+          artifacts/shario-darwin-arm64/shario-${{ steps.get_version.outputs.VERSION }}-darwin-arm64.tar.gz
+          artifacts/installers/*.deb
+          artifacts/installers/*.rpm
+          artifacts/installers/*.tar.gz
         token: ${{ secrets.GITHUB_TOKEN }}
 
