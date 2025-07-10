@@ -59,7 +59,7 @@ jobs:
         xcode-select --version || xcode-select --install
 
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-1.23-${{ hashFiles('**/go.sum') }}
@@ -97,7 +97,7 @@ jobs:
       shell: bash
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: shario-${{ matrix.goos }}-${{ matrix.goarch }}
         path: dist/shario-${{ steps.get_version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.*
@@ -111,7 +111,7 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         path: dist/
 
@@ -249,7 +249,7 @@ jobs:
         cp dist/shario-darwin-arm64/shario-${VERSION}-darwin-arm64.tar.gz shario-${VERSION}-darwin-arm64.tar.gz
 
     - name: Upload installer artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: installers
         path: |
@@ -266,7 +266,7 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         path: artifacts/
 
@@ -314,54 +314,16 @@ jobs:
 
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
+      uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ steps.get_version.outputs.VERSION }}
-        release_name: Shario ${{ steps.get_version.outputs.VERSION }}
+        name: Shario ${{ steps.get_version.outputs.VERSION }}
         body_path: release_notes.md
         draft: false
         prerelease: false
+        files: |
+          artifacts/shario-*/shario-${{ steps.get_version.outputs.VERSION }}-*
+          artifacts/installers/*
 
-    # Upload all built assets to the release
-    - name: Upload Release Assets
-      run: |
-        VERSION=${{ steps.get_version.outputs.VERSION }}
-        UPLOAD_URL="${{ steps.create_release.outputs.upload_url }}"
-        
-        # Function to upload file
-        upload_file() {
-          local file=$1
-          local content_type=$2
-          
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: $content_type" \
-            --data-binary @"$file" \
-            "${UPLOAD_URL%\{*}?name=$(basename "$file")"
-        }
-        
-        # Upload binary archives
-        for file in artifacts/shario-*/shario-${VERSION}-*; do
-          if [[ -f "$file" ]]; then
-            if [[ "$file" == *.zip ]]; then
-              upload_file "$file" "application/zip"
-            elif [[ "$file" == *.tar.gz ]]; then
-              upload_file "$file" "application/gzip"
-            fi
-          fi
-        done
-        
-        # Upload installer packages
-        for file in artifacts/installers/*; do
-          if [[ -f "$file" ]]; then
-            if [[ "$file" == *.deb ]]; then
-              upload_file "$file" "application/vnd.debian.binary-package"
-            elif [[ "$file" == *.rpm ]]; then
-              upload_file "$file" "application/x-rpm"
-            elif [[ "$file" == *.tar.gz ]]; then
-              upload_file "$file" "application/gzip"
-            fi
-          fi
-        done

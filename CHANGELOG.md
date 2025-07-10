@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed deprecated GitHub Actions in release workflow:
+  - Updated `actions/upload-artifact` from v3 to v4
+  - Updated `actions/download-artifact` from v3 to v4
+  - Updated `actions/cache` from v3 to v4
+  - Replaced deprecated `actions/create-release@v1` with `softprops/action-gh-release@v1`
+  - Simplified release asset upload process
+
 ## [0.0.1-rc.2] - 2025-07-10
 
 ### Added
