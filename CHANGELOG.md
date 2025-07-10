@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Simplified build matrix to native compilation only
   - Fixed CGO_ENABLED configuration for each platform
   - Added proper conditional file handling for macOS builds
+- Fixed CI workflow cross-compilation test failure:
+  - Removed cross-compilation tests (Fyne requires CGO, incompatible with cross-compilation)
+  - Replaced with native compilation test on each platform
+  - Each runner now only tests building for its own platform
 
 ## [0.0.1-rc.3] - 2025-07-10
 

@@ -93,13 +93,11 @@ jobs:
     - name: Run golint
       run: golint ./...
 
-    # Test build for different architectures
-    - name: Test cross-compilation
+    # Test build for different architectures (only on native platforms due to Fyne CGO requirements)
+    - name: Test native compilation
       run: |
-        GOOS=linux GOARCH=amd64 go build -o shario-linux-amd64 .
-        GOOS=windows GOARCH=amd64 go build -o shario-windows-amd64.exe .
-        GOOS=darwin GOARCH=amd64 go build -o shario-darwin-amd64 .
-        GOOS=darwin GOARCH=arm64 go build -o shario-darwin-arm64 .
+        echo "Testing native compilation for ${{ matrix.os }}"
+        go build -o shario-test${{ matrix.os == 'windows-latest' && '.exe' || '' }} .
 
     # Generate test coverage report
     - name: Generate coverage report
