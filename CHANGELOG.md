@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-rc.5] - 2025-07-10
+
 ### Fixed
 - Fixed release workflow Windows PowerShell compatibility issue:
   - Added explicit `shell: bash` to build and archive steps
   - Windows runner now uses bash instead of PowerShell for consistency
   - Ensures cross-platform shell script compatibility
+
+### Changed
+- Updated version references throughout documentation to 0.0.1-rc.5
 
 ## [0.0.1-rc.4] - 2025-07-10
 
