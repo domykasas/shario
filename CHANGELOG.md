@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.1] - 2025-07-10
+
+### Fixed
+- Fixed RPM package creation version format issue:
+  - RPM spec files don't allow hyphens in version numbers
+  - Converted release candidate versions from "1.0.0-rc.1" to "1.0.0.rc.1" for RPM compatibility
+  - Updated RPM build process to handle version conversion automatically
+  - Maintains original tag format while ensuring RPM package creation succeeds
+
+### Changed
+- **MAJOR VERSION BUMP**: Updated from 0.0.1-rc.9 to 1.0.0-rc.1
+  - Application is now feature-complete and stable enough for 1.0 release
+  - All core P2P functionality working: file transfers, chat, peer discovery
+  - All CI/CD workflows fixed and functional
+  - Ready for production use after final testing
+
 ## [0.0.1-rc.9] - 2025-07-10
 
 ### Fixed

@@ -179,6 +179,10 @@ jobs:
         VERSION=${{ steps.get_version.outputs.VERSION }}
         VERSION_NUM=${VERSION#v}
         
+        # Convert version for RPM (replace hyphens with dots for rc versions)
+        # e.g., 1.0.0-rc.1 becomes 1.0.0.rc.1 for RPM compatibility
+        RPM_VERSION=$(echo "$VERSION_NUM" | sed 's/-/./g')
+        
         # Install rpm build tools
         sudo apt-get update
         sudo apt-get install -y rpm
@@ -192,7 +196,7 @@ jobs:
         # Create spec file
         cat > ~/rpmbuild/SPECS/shario.spec << 'SPEC_EOF'
         Name: shario
-        Version: VERSION_PLACEHOLDER
+        Version: RPM_VERSION_PLACEHOLDER
         Release: 1%{?dist}
         Summary: P2P File Sharing Application
         License: MIT
@@ -233,12 +237,12 @@ jobs:
         /usr/share/applications/shario.desktop
         
         %changelog
-        * DATE_PLACEHOLDER Shario Team <team@shario.dev> - VERSION_PLACEHOLDER-1
+        * DATE_PLACEHOLDER Shario Team <team@shario.dev> - RPM_VERSION_PLACEHOLDER-1
         - Release VERSION_TAG_PLACEHOLDER
         SPEC_EOF
         
         # Replace placeholders in spec file
-        sed -i "s/VERSION_PLACEHOLDER/${VERSION_NUM}/g" ~/rpmbuild/SPECS/shario.spec
+        sed -i "s/RPM_VERSION_PLACEHOLDER/${RPM_VERSION}/g" ~/rpmbuild/SPECS/shario.spec
         sed -i "s/VERSION_TAG_PLACEHOLDER/${VERSION}/g" ~/rpmbuild/SPECS/shario.spec
         sed -i "s/DATE_PLACEHOLDER/$(date +'%a %b %d %Y')/g" ~/rpmbuild/SPECS/shario.spec
         
@@ -247,8 +251,8 @@ jobs:
         tar -xzf shario-${VERSION}-linux-amd64.tar.gz
         rpmbuild -bb ~/rpmbuild/SPECS/shario.spec
         
-        # Copy result
-        cp ~/rpmbuild/RPMS/x86_64/shario-${VERSION_NUM}-1.*.rpm $GITHUB_WORKSPACE/shario-${VERSION}-linux-amd64.rpm
+        # Copy result (use RPM version format in filename)
+        cp ~/rpmbuild/RPMS/x86_64/shario-${RPM_VERSION}-1.*.rpm $GITHUB_WORKSPACE/shario-${VERSION}-linux-amd64.rpm
 
     # Create macOS DMG
     - name: Create macOS DMG

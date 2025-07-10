@@ -2,7 +2,7 @@
 
 ## Project Overview
 **Shario** - Cross-platform P2P file-sharing application with real-time chat
-- **Current Version**: 0.0.1-rc.9 (Release Candidate - 2025-07-10)
+- **Current Version**: 1.0.0-rc.1 (Release Candidate - 2025-07-10)
 - **Language**: Go 1.20+
 - **GUI**: Fyne framework  
 - **Networking**: libp2p (mDNS + DHT discovery)
@@ -12,21 +12,21 @@
 ## Versioning
 - **Follows**: [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH)
 - **Changelog**: [Keep a Changelog](https://keepachangelog.com/) format
-- **Current**: v0.0.1-rc.9 - Release candidate with all core P2P functionality + workflow fixes + Go formatting compliance
-- **Next**: v0.0.1 - Stable release (after testing rc.9)
+- **Current**: v1.0.0-rc.1 - Release candidate with all core P2P functionality + workflow fixes + RPM packaging compatibility
+- **Next**: v1.0.0 - **FIRST STABLE RELEASE** (after testing rc.1)
 
 ### Pre-release Versions (Release Candidates)
-- **Format**: `MAJOR.MINOR.PATCH-rc.N` (e.g., 0.0.1-rc.1, 0.0.1-rc.2)
+- **Format**: `MAJOR.MINOR.PATCH-rc.N` (e.g., 1.0.0-rc.1, 1.0.0-rc.2)
 - **Purpose**: Testing versions before stable release
 - **Workflow**:
-  1. `v0.0.1-rc.1` - First release candidate
-  2. `v0.0.1-rc.2` - Second release candidate (if bugs found in rc.1)
-  3. `v0.0.1-rc.N` - Additional candidates as needed
-  4. `v0.0.1` - Final stable release (when rc.N is bug-free)
+  1. `v1.0.0-rc.1` - First release candidate
+  2. `v1.0.0-rc.2` - Second release candidate (if bugs found in rc.1)
+  3. `v1.0.0-rc.N` - Additional candidates as needed
+  4. `v1.0.0` - Final stable release (when rc.N is bug-free)
 - **GitHub Actions**: Release candidates trigger same CI/CD workflows as stable releases
 - **Distribution**: Pre-releases are marked as "Pre-release" on GitHub releases page
 - **Testing**: Use rc versions for user acceptance testing before stable release
-- **Git Tags**: Each rc gets its own tag (`git tag v0.0.1-rc.1`, `git push origin v0.0.1-rc.1`)
+- **Git Tags**: Each rc gets its own tag (`git tag v1.0.0-rc.1`, `git push origin v1.0.0-rc.1`)
 - **Changelog**: Document rc releases in CHANGELOG.md under [Unreleased] until stable release
 
 ## Key Technical Details
@@ -222,17 +222,17 @@ peersData, transfersData, messagesData binding.StringList
 ### 🔢 PRE-RELEASE VERSION INCREMENT RULE
 **BEFORE EVERY "git push" with release candidate versions:**
 1. **Auto-increment RC version**: Current version + 1
-   - Example: `0.0.1-rc.2` → `0.0.1-rc.3`
-   - Example: `0.0.1-rc.5` → `0.0.1-rc.6`
-   - Example: `0.1.0-rc.1` → `0.1.0-rc.2`
+   - Example: `1.0.0-rc.1` → `1.0.0-rc.2`
+   - Example: `1.0.0-rc.5` → `1.0.0-rc.6`
+   - Example: `1.1.0-rc.1` → `1.1.0-rc.2`
 2. **Update sequence BEFORE git push**:
    - Step 1: Increment version number in CLAUDE.md
    - Step 2: Update CHANGELOG.md (move [Unreleased] to new rc.X section)
    - Step 3: Update README.md (if version references exist)
    - Step 4: Git add, commit, tag with new version
    - Step 5: Git push (when explicitly requested)
-3. **Version format**: Always use `v0.0.1-rc.N` for tags (with 'v' prefix)
-4. **Exception**: Only skip increment when moving from rc.N to stable (e.g., rc.3 → 0.0.1)
+3. **Version format**: Always use `v1.0.0-rc.N` for tags (with 'v' prefix)
+4. **Exception**: Only skip increment when moving from rc.N to stable (e.g., rc.3 → 1.0.0)
 
 ## Development Notes
 - Use unique identity files per process for multi-instance testing
