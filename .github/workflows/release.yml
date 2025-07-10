@@ -77,6 +77,7 @@ jobs:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
         CGO_ENABLED: ${{ matrix.cgo_enabled }}
+      shell: bash
       run: |
         mkdir -p dist
         BINARY_NAME=shario-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.binary_suffix }}
@@ -84,6 +85,7 @@ jobs:
         go build -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" -o dist/$BINARY_NAME .
 
     - name: Create archive
+      shell: bash
       run: |
         cd dist
         BINARY_NAME=shario-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.binary_suffix }}
@@ -94,7 +96,6 @@ jobs:
         else
           tar -czf ${ARCHIVE_NAME}.tar.gz $BINARY_NAME
         fi
-      shell: bash
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
