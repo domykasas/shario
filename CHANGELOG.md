@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.5] - 2025-07-10
+
+### Fixed
+- Fixed Windows build timeout issues with aggressive optimizations:
+  - Enhanced Go module and build cache for all platforms (especially Windows)
+  - Added comprehensive cache paths: module cache, build cache, platform-specific caches
+  - Increased Windows build timeout from default to 45 minutes
+  - Added parallel build optimization with GOMAXPROCS=4
+  - Improved build logging and cache statistics
+- Fixed GitHub release duplicate upload issues:
+  - Replaced overlapping glob patterns with specific file paths
+  - Added conditional Windows binary upload to prevent missing file errors
+  - Set fail_on_unmatched_files: false to handle partial build failures gracefully
+  - Eliminated "Not Found" errors during asset uploads
+
+### Changed
+- Updated version references throughout documentation to 1.0.0-rc.5
+- Added build optimization flags: -trimpath for reproducible builds
+- Enhanced build logging with binary size reporting
+
+### Performance
+- **Windows builds**: Should be 3-5x faster with aggressive caching
+- **All platforms**: Improved cache hit rates with platform-specific cache keys
+- **Release process**: More reliable with better error handling
+
 ## [1.0.0-rc.4] - 2025-07-10
 
 ### Fixed

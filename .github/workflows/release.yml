@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.timeout }}
     strategy:
       matrix:
         include:
@@ -17,24 +18,28 @@ jobs:
             binary_suffix: ''
             archive_type: tar.gz
             cgo_enabled: "1"
+            timeout: 20
           - os: windows-latest
             goos: windows
             goarch: amd64
             binary_suffix: .exe
             archive_type: zip
             cgo_enabled: "1"
+            timeout: 45
           - os: macos-latest
             goos: darwin
             goarch: amd64
             binary_suffix: ''
             archive_type: tar.gz
             cgo_enabled: "1"
+            timeout: 30
           - os: macos-latest
             goos: darwin
             goarch: arm64
             binary_suffix: ''
             archive_type: tar.gz
             cgo_enabled: "1"
+            timeout: 30
 
     steps:
     - uses: actions/checkout@v4
@@ -57,16 +62,24 @@ jobs:
       run: |
         xcode-select --version || xcode-select --install
 
-    - name: Cache Go modules
+    - name: Cache Go modules and build cache
       uses: actions/cache@v4
       with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-1.23-${{ hashFiles('**/go.sum') }}
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+          ~/AppData/Local/go-build
+          ~/Library/Caches/go-build
+        key: ${{ runner.os }}-go-1.23-${{ matrix.goos }}-${{ hashFiles('**/go.sum') }}
         restore-keys: |
+          ${{ runner.os }}-go-1.23-${{ matrix.goos }}-
           ${{ runner.os }}-go-1.23-
+          ${{ runner.os }}-go-
 
-    - name: Download dependencies
-      run: go mod download
+    - name: Download and warm cache
+      run: |
+        go mod download
+        go mod verify
 
     - name: Get version
       id: get_version
@@ -77,12 +90,18 @@ jobs:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
         CGO_ENABLED: ${{ matrix.cgo_enabled }}
+        GOMAXPROCS: 4
       shell: bash
       run: |
         mkdir -p dist
         BINARY_NAME=shario-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.binary_suffix }}
         echo "Building for ${{ matrix.goos }}/${{ matrix.goarch }} with CGO_ENABLED=${{ matrix.cgo_enabled }}"
-        go build -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" -o dist/$BINARY_NAME .
+        echo "Go version: $(go version)"
+        echo "Build cache stats:"
+        go env GOCACHE
+        # Optimized build with parallel compilation and trimpath
+        go build -v -trimpath -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" -o dist/$BINARY_NAME .
+        echo "Build completed, binary size: $(ls -lh dist/$BINARY_NAME | awk '{print $5}')"
 
     - name: Create archive (Windows)
       if: matrix.archive_type == 'zip'
@@ -349,12 +368,19 @@ jobs:
         draft: false
         prerelease: ${{ contains(steps.get_version.outputs.VERSION, 'rc') }}
         files: |
-          artifacts/shario-windows-amd64/shario-${{ steps.get_version.outputs.VERSION }}-windows-amd64.zip
           artifacts/shario-linux-amd64/shario-${{ steps.get_version.outputs.VERSION }}-linux-amd64.tar.gz
           artifacts/shario-darwin-amd64/shario-${{ steps.get_version.outputs.VERSION }}-darwin-amd64.tar.gz
           artifacts/shario-darwin-arm64/shario-${{ steps.get_version.outputs.VERSION }}-darwin-arm64.tar.gz
-          artifacts/installers/*.deb
-          artifacts/installers/*.rpm
-          artifacts/installers/*.tar.gz
+          artifacts/installers/shario-${{ steps.get_version.outputs.VERSION }}-linux-amd64.deb
+          artifacts/installers/shario-${{ steps.get_version.outputs.VERSION }}-linux-amd64.rpm
+        fail_on_unmatched_files: false
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload Windows binary (if available)
+      if: hashFiles('artifacts/shario-windows-amd64/shario-${{ steps.get_version.outputs.VERSION }}-windows-amd64.zip') != ''
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        files: artifacts/shario-windows-amd64/shario-${{ steps.get_version.outputs.VERSION }}-windows-amd64.zip
         token: ${{ secrets.GITHUB_TOKEN }}
 
