@@ -27,8 +27,8 @@ jobs:
           - os: ubuntu-latest
             goos: linux
             goarch: arm64
-            artifact_name: shario-linux-arm64
-            asset_name: shario-linux-arm64
+            artifact_name: shario-linux-arm64-headless
+            asset_name: shario-linux-arm64-headless
             cross_compile: true
             headless_mode: true
           
@@ -43,8 +43,8 @@ jobs:
           - os: windows-latest
             goos: windows
             goarch: arm64
-            artifact_name: shario-windows-arm64.exe
-            asset_name: shario-windows-arm64
+            artifact_name: shario-windows-arm64-headless.exe
+            asset_name: shario-windows-arm64-headless
             cross_compile: true
             headless_mode: true
             
@@ -67,8 +67,8 @@ jobs:
           - os: ubuntu-latest
             goos: freebsd
             goarch: amd64
-            artifact_name: shario-freebsd-x64
-            asset_name: shario-freebsd-x64
+            artifact_name: shario-freebsd-x64-headless
+            asset_name: shario-freebsd-x64-headless
             cross_compile: true
             headless_mode: true
 
@@ -641,20 +641,20 @@ jobs:
           ### Linux
           | Format | Description | Download |
           |---------|-------------|----------|
-          | Binary | Standalone executable | \`shario-$VERSION-linux-amd64\` |
+          | Binary | Standalone executable (GUI) | \`shario-$VERSION-linux-amd64\` |
           | DEB | Debian/Ubuntu package | \`shario-$VERSION-linux-amd64.deb\` |
           | RPM | Red Hat/Fedora package | \`shario-$VERSION-linux-x86_64.rpm\` |
           | Snap | Universal Linux package | \`shario-$VERSION-linux-amd64.snap\` |
           | AppImage | Portable Linux package | \`shario-$VERSION-linux-x86_64.AppImage\` |
           | Archive | Compressed archive | \`shario-$VERSION-linux-x64.tar.xz\` |
-          | ARM64 | ARM64 binary | \`shario-$VERSION-linux-arm64\` |
+          | ARM64 | ARM64 binary (headless) | \`shario-$VERSION-linux-arm64-headless\` |
           
           ### Windows
           | Format | Description | Download |
           |---------|-------------|----------|
-          | Executable | Windows executable | \`shario-$VERSION-windows-x64.exe\` |
+          | Executable | Windows executable (GUI) | \`shario-$VERSION-windows-x64.exe\` |
           | Squirrel | Auto-updater package | \`shario-$VERSION-squirrel.zip\` |
-          | ARM64 | ARM64 executable | \`shario-$VERSION-windows-arm64.exe\` |
+          | ARM64 | ARM64 executable (headless) | \`shario-$VERSION-windows-arm64-headless.exe\` |
           
           ### macOS
           | Format | Description | Download |
@@ -666,7 +666,7 @@ jobs:
           ### FreeBSD
           | Format | Description | Download |
           |---------|-------------|----------|
-          | Binary | FreeBSD executable | \`shario-$VERSION-freebsd-x64\` |
+          | Binary | FreeBSD executable (headless) | \`shario-$VERSION-freebsd-x64-headless\` |
           
           ## Installation
           

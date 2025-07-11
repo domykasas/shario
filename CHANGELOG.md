@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.18] - 2025-07-11
+
+### Fixed
+- **Headless Build Naming**: Corrected filenames to properly indicate CLI-only builds
+  - Linux ARM64: `shario-v1.0.0-rc.18-linux-arm64-headless` (was missing headless indicator)
+  - Windows ARM64: `shario-v1.0.0-rc.18-windows-arm64-headless.exe` (was missing headless indicator)  
+  - FreeBSD: `shario-v1.0.0-rc.18-freebsd-x64-headless` (was missing headless indicator)
+  - Release notes now clearly distinguish GUI vs headless builds
+
+### Changed
+- **Release Documentation**: Updated download tables to specify GUI vs headless builds
+  - GUI builds: Linux x64, Windows x64, macOS (Intel/ARM64)
+  - Headless builds: Linux ARM64, Windows ARM64, FreeBSD x64
+
 ## [1.0.0-rc.17] - 2025-07-11
 
 ### Added
