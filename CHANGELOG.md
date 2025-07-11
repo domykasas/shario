@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.15] - 2025-07-11
+
+### Changed
+- **Windows Build Performance**: Optimized GitHub Actions workflow for faster Windows builds
+  - Added Windows-specific build caching (~\AppData\Local\go-build, ~\go\pkg\mod)
+  - Enabled parallel compilation with GOMAXPROCS=0
+  - Added Windows-specific build flags (-H windowsgui -buildmode=exe)
+  - Implemented parallel dependency download with -x flag
+  - Reduced Windows build timeout from 60 to 30 minutes
+  - Enhanced Go dependency caching with explicit cache-dependency-path
+
 ## [1.0.0-rc.14] - 2025-07-11
 
 ### Fixed

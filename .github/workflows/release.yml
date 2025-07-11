@@ -11,7 +11,7 @@ env:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 30 || 60 }}
     strategy:
       fail-fast: false
       matrix:
@@ -77,6 +77,9 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
+          cache-dependency-path: |
+            go.sum
+            go.mod
 
       # Platform-specific system dependencies
       - name: Install Linux dependencies
@@ -101,11 +104,28 @@ jobs:
           # macOS dependencies should be available by default
           xcode-select --version || xcode-select --install
 
+      - name: Set up Windows build cache
+        if: matrix.os == 'windows-latest'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\go-build
+            ~\go\pkg\mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Set up Windows environment
         if: matrix.os == 'windows-latest'
         run: |
           # Windows should have required tools by default with Go 1.23+
           echo "Windows environment ready"
+          # Optimize build settings for Windows
+          go env -w CGO_ENABLED=1
+          go env -w GOOS=windows
+          go env -w GOARCH=${{ matrix.goarch }}
+          # Enable parallel compilation for faster builds
+          go env -w GOMAXPROCS=0
           go env
 
       # Get version from tag
@@ -120,7 +140,8 @@ jobs:
       # Ensure dependencies are ready
       - name: Download dependencies
         run: |
-          go mod download
+          # Use parallel download for faster dependency resolution
+          go mod download -x
           go mod verify
 
       # Format code to prevent CI failures (Tala doesn't need this, but we do due to different toolchains)
@@ -159,12 +180,23 @@ jobs:
           echo "Environment: GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=$CGO_ENABLED"
           
           # Build with optimizations (similar to Tala but with CGO handling)
-          go build -v \
-            -trimpath \
-            $BUILD_TAGS \
-            -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" \
-            -o ${{ matrix.artifact_name }} \
-            .
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            # Windows-specific build optimizations
+            go build -v \
+              -trimpath \
+              $BUILD_TAGS \
+              -ldflags="-s -w -H windowsgui -X main.version=${{ steps.version.outputs.VERSION }}" \
+              -buildmode=exe \
+              -o ${{ matrix.artifact_name }} \
+              .
+          else
+            go build -v \
+              -trimpath \
+              $BUILD_TAGS \
+              -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" \
+              -o ${{ matrix.artifact_name }} \
+              .
+          fi
           
           echo "Build completed successfully"
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
