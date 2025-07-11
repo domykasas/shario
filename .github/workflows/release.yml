@@ -461,9 +461,9 @@ jobs:
               mkdir -p squirrel
               cp "${{ matrix.artifact_name }}" squirrel/
               cp README.md CHANGELOG.md squirrel/ 2>/dev/null || true
-              cd squirrel
-              zip -r "../shario-$VERSION-squirrel.zip" .
-              cd ..
+              
+              # Use PowerShell Compress-Archive for Windows
+              powershell -Command "Compress-Archive -Path squirrel\\* -DestinationPath shario-$VERSION-squirrel.zip"
               echo "SQUIRREL_PATH=shario-$VERSION-squirrel.zip" >> $GITHUB_ENV
             fi
             

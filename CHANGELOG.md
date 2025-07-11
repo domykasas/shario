@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2025-07-11
+
+### Fixed
+- **Windows Build**: Fixed Windows Squirrel package creation in GitHub Actions workflow
+  - Replaced `zip` command (not available on Windows runners) with PowerShell's `Compress-Archive`
+  - Windows builds now use: `powershell -Command "Compress-Archive -Path squirrel\\* -DestinationPath shario-VERSION-squirrel.zip"`
+  - Resolves "zip: command not found" error on windows-latest runners
+
 ## [1.0.2] - 2025-07-11
 
 ### Fixed
