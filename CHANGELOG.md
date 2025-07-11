@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.11] - 2025-07-11
+
+### Fixed
+- **ARM64 Cross-compilation**: Fixed ARM64 build failures on Linux and Windows
+  - Linux ARM64: Missing system libraries for OpenGL/X11 cross-compilation
+  - Windows ARM64: CGO/Fyne incompatibility with cross-compilation
+  - Solution: ARM64 builds now use headless mode to avoid GUI library dependencies
+  - ARM64 binaries provide full P2P functionality without GUI requirements
+
+### Changed
+- **ARM64 Architecture**: ARM64 builds now run in headless mode by default
+  - Linux ARM64: Headless mode with full P2P capabilities
+  - Windows ARM64: Headless mode with full P2P capabilities
+  - Maintains compatibility while avoiding complex cross-compilation issues
+- **Build Matrix**: Updated to use headless mode for ARM64 cross-compilation scenarios
+- **Release Notes**: Clarified GUI vs headless mode for different architectures
+
 ## [1.0.0-rc.10] - 2025-07-11
 
 ### Added

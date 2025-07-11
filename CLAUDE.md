@@ -2,7 +2,7 @@
 
 ## Project Overview
 **Shario** - Cross-platform P2P file-sharing application with real-time chat
-- **Current Version**: 1.0.0-rc.10 (Release Candidate - 2025-07-11)
+- **Current Version**: 1.0.0-rc.11 (Release Candidate - 2025-07-11)
 - **Language**: Go 1.20+
 - **GUI**: Fyne framework  
 - **Networking**: libp2p (mDNS + DHT discovery)
@@ -12,8 +12,8 @@
 ## Versioning
 - **Follows**: [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH)
 - **Changelog**: [Keep a Changelog](https://keepachangelog.com/) format
-- **Current**: v1.0.0-rc.10 - Release candidate with FreeBSD headless support (7 platforms)
-- **Next**: v1.0.0 - **FIRST STABLE RELEASE** (after testing rc.10)
+- **Current**: v1.0.0-rc.11 - Release candidate with fixed ARM64 cross-compilation (7 platforms)
+- **Next**: v1.0.0 - **FIRST STABLE RELEASE** (after testing rc.11)
 
 ### Pre-release Versions (Release Candidates)
 - **Format**: `MAJOR.MINOR.PATCH-rc.N` (e.g., 1.0.0-rc.1, 1.0.0-rc.2)

@@ -28,6 +28,8 @@ jobs:
             goarch: arm64
             artifact_name: shario-linux-arm64
             asset_name: shario-linux-arm64
+            cross_compile: true
+            headless_mode: true
           
           # Windows builds - native compilation for CGO/Fyne  
           - os: windows-latest
@@ -41,6 +43,8 @@ jobs:
             goarch: arm64
             artifact_name: shario-windows-arm64.exe
             asset_name: shario-windows-arm64.exe
+            cross_compile: true
+            headless_mode: true
             
           # macOS builds - native compilation for CGO/Fyne
           - os: macos-latest
@@ -139,29 +143,17 @@ jobs:
             echo "Cross-compiling for $GOOS/$GOARCH with CGO disabled"
             export CGO_ENABLED=0
             
-            # Special handling for FreeBSD - try alternative build tags
-            if [[ "${{ matrix.goos }}" == "freebsd" ]]; then
-              echo "FreeBSD build - attempting with build tags for headless operation"
+            # Special handling for headless mode platforms
+            if [[ "${{ matrix.headless_mode }}" == "true" ]]; then
+              echo "Headless mode build - using headless build tags"
               export BUILD_TAGS="-tags headless"
             fi
           else
             echo "Native compilation for $GOOS/$GOARCH with CGO enabled"
             export CGO_ENABLED=1
             
-            # ARM64 cross-compilation setup on Linux
-            if [[ "${{ matrix.goos }}" == "linux" && "${{ matrix.goarch }}" == "arm64" ]]; then
-              sudo apt-get update
-              sudo apt-get install -y gcc-aarch64-linux-gnu
-              export CC=aarch64-linux-gnu-gcc
-              export CGO_ENABLED=1
-              echo "Set up ARM64 cross-compilation with CC=$CC"
-            fi
-            
-            # ARM64 cross-compilation setup on Windows
-            if [[ "${{ matrix.goos }}" == "windows" && "${{ matrix.goarch }}" == "arm64" ]]; then
-              echo "Windows ARM64 cross-compilation"
-              export CGO_ENABLED=0  # Disable CGO for Windows ARM64 cross-compilation
-            fi
+            # Note: ARM64 cross-compilation removed due to CGO/GUI complexity
+            # ARM64 builds now use headless mode to avoid GUI library dependencies
           fi
           
           echo "Environment: GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=$CGO_ENABLED"
@@ -543,12 +535,12 @@ jobs:
           Choose the appropriate binary for your platform:
           
           ### Windows
-          - **Windows (x64)**: \`shario-windows-amd64-$VERSION.zip\`
-          - **Windows (ARM64)**: \`shario-windows-arm64-$VERSION.zip\`
+          - **Windows (x64)**: \`shario-windows-amd64-$VERSION.zip\` (GUI)
+          - **Windows (ARM64)**: \`shario-windows-arm64-$VERSION.zip\` (headless)
           
           ### Linux
-          - **Binary (x64)**: \`shario-linux-amd64-$VERSION.tar.gz\`
-          - **Binary (ARM64)**: \`shario-linux-arm64-$VERSION.tar.gz\`
+          - **Binary (x64)**: \`shario-linux-amd64-$VERSION.tar.gz\` (GUI)
+          - **Binary (ARM64)**: \`shario-linux-arm64-$VERSION.tar.gz\` (headless)
           - **DEB Package**: \`shario-$VERSION-linux-amd64.deb\` (Debian/Ubuntu)
           - **RPM Package**: \`shario-$VERSION-linux-x86_64.rpm\` (Red Hat/Fedora)
           - **Snap Package**: \`shario-$VERSION-linux-amd64.snap\` (Universal Linux)
