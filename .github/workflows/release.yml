@@ -36,15 +36,31 @@ jobs:
             goos: windows
             goarch: amd64
             artifact_name: shario-windows-amd64.exe
-            asset_name: shario-windows-amd64.exe
+            asset_name: shario-windows-amd64
             
           - os: windows-latest
             goos: windows
             goarch: arm64
             artifact_name: shario-windows-arm64-headless.exe
-            asset_name: shario-windows-arm64-headless.exe
+            asset_name: shario-windows-arm64-headless
             cross_compile: true
             headless_mode: true
+            
+          # Additional Windows variants for better naming
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            artifact_name: shario-windows-headless.exe
+            asset_name: shario-windows-headless
+            cross_compile: true
+            headless_mode: true
+            
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            artifact_name: shario-windows.exe
+            asset_name: shario-windows
+            gui_variant: true
             
           # macOS builds - native compilation for CGO/Fyne
           - os: macos-latest
@@ -448,13 +464,18 @@ jobs:
           VERSION=${{ steps.version.outputs.VERSION }}
           
           if [[ "${{ matrix.goos }}" == "windows" ]]; then
-            # Windows: create zip
+            # Windows: create zip and individual binary
             if command -v powershell &> /dev/null; then
               powershell -command "Compress-Archive -Path '${{ matrix.artifact_name }}' -DestinationPath '${{ matrix.asset_name }}-$VERSION.zip'"
             else
               zip "${{ matrix.asset_name }}-$VERSION.zip" "${{ matrix.artifact_name }}"
             fi
+            
+            # Also create a versioned binary file for direct download
+            cp "${{ matrix.artifact_name }}" "${{ matrix.asset_name }}-$VERSION.exe"
+            
             echo "ASSET_PATH=${{ matrix.asset_name }}-$VERSION.zip" >> $GITHUB_ENV
+            echo "BINARY_PATH=${{ matrix.asset_name }}-$VERSION.exe" >> $GITHUB_ENV
           else
             # Unix: create tar.gz
             tar -czf "${{ matrix.asset_name }}-$VERSION.tar.gz" "${{ matrix.artifact_name }}"
@@ -487,6 +508,15 @@ jobs:
         with:
           name: ${{ matrix.asset_name }}-${{ steps.version.outputs.VERSION }}
           path: ${{ env.ASSET_PATH }}
+          retention-days: 30
+
+      # Upload Windows binary files (only for Windows builds)
+      - name: Upload Windows binary
+        if: matrix.goos == 'windows' && env.BINARY_PATH != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}-binary-${{ steps.version.outputs.VERSION }}
+          path: ${{ env.BINARY_PATH }}
           retention-days: 30
 
       # Upload Snap package (only for Linux AMD64 if created)
@@ -550,7 +580,7 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p release-assets
-          find artifacts -name "*.zip" -o -name "*.tar.gz" | xargs -I {} cp {} release-assets/
+          find artifacts -name "*.zip" -o -name "*.tar.gz" -o -name "*.exe" | xargs -I {} cp {} release-assets/
           ls -la release-assets/
 
       - name: Generate release notes
@@ -567,8 +597,11 @@ jobs:
           Choose the appropriate binary for your platform:
           
           ### Windows
-          - **Windows (x64)**: \`shario-windows-amd64-$VERSION.zip\` (GUI)
-          - **Windows (ARM64)**: \`shario-windows-arm64-headless-$VERSION.zip\` (headless)
+          - **Windows (x64) Archive**: \`shario-windows-amd64-$VERSION.zip\` (GUI)
+          - **Windows (x64) Binary**: \`shario-windows-$VERSION.exe\` (GUI, direct download)
+          - **Windows (ARM64) Archive**: \`shario-windows-arm64-headless-$VERSION.zip\` (headless)
+          - **Windows Headless Archive**: \`shario-windows-headless-$VERSION.zip\` (headless)
+          - **Windows Headless Binary**: \`shario-windows-headless-$VERSION.exe\` (headless, direct download)
           
           ### Linux
           - **Binary (x64)**: \`shario-linux-amd64-$VERSION.tar.gz\` (GUI)

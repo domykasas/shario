@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.16] - 2025-07-11
+
+### Fixed
+- **Windows Release Assets**: Fixed naming convention for Windows releases
+  - Changed from `shario-windows-amd64.exe-v1.0.0-rc.15.zip` to `shario-windows-amd64-v1.0.0-rc.15.zip`
+  - Changed from `shario-windows-arm64-headless.exe-v1.0.0-rc.15.zip` to `shario-windows-arm64-headless-v1.0.0-rc.15.zip`
+  - Removed `.exe` from asset names to prevent double extensions in archive names
+
+### Added
+- **Windows Binary Variants**: Added new Windows binary formats for direct download
+  - `shario-windows-v1.0.0-rc.16.exe` - GUI version for direct download
+  - `shario-windows-headless-v1.0.0-rc.16.exe` - Headless version for direct download
+  - `shario-windows-headless-v1.0.0-rc.16.zip` - Headless version archive
+  - Both archive and standalone binary formats now available for Windows
+
 ## [1.0.0-rc.15] - 2025-07-11
 
 ### Changed
