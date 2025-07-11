@@ -23,6 +23,12 @@ jobs:
             artifact_name: shario-linux-amd64
             asset_name: shario-linux-amd64
           
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            artifact_name: shario-linux-arm64
+            asset_name: shario-linux-arm64
+          
           # Windows builds - native compilation for CGO/Fyne  
           - os: windows-latest
             goos: windows
@@ -30,18 +36,32 @@ jobs:
             artifact_name: shario-windows-amd64.exe
             asset_name: shario-windows-amd64.exe
             
+          - os: windows-latest
+            goos: windows
+            goarch: arm64
+            artifact_name: shario-windows-arm64.exe
+            asset_name: shario-windows-arm64.exe
+            
           # macOS builds - native compilation for CGO/Fyne
           - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            artifact_name: shario-darwin-arm64
+            asset_name: shario-darwin-arm64
+            
+          - os: macos-13  # Intel runner for amd64
             goos: darwin
             goarch: amd64
             artifact_name: shario-darwin-amd64
             asset_name: shario-darwin-amd64
             
-          - os: macos-13  # Intel runner for amd64
-            goos: darwin
+          # FreeBSD builds - cross-compilation (no native runners)
+          - os: ubuntu-latest
+            goos: freebsd
             goarch: amd64
-            artifact_name: shario-darwin-amd64-intel
-            asset_name: shario-darwin-amd64-intel
+            artifact_name: shario-freebsd-amd64
+            asset_name: shario-freebsd-amd64
+            cross_compile: true
 
     steps:
       - name: Checkout code
@@ -59,6 +79,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc pkg-config libgl1-mesa-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libxxf86vm-dev libasound2-dev
+          
+          # Install packaging tools for Linux packages
+          if [[ "${{ matrix.goarch }}" == "amd64" && "${{ matrix.goos }}" == "linux" ]]; then
+            sudo snap install snapcraft --classic
+            # Install tools for DEB, RPM, and AppImage creation
+            sudo apt-get install -y dpkg-dev rpm alien fuse libfuse2 wget
+            # Download AppImage tools
+            wget -O /tmp/appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+            chmod +x /tmp/appimagetool
+          fi
 
       - name: Install macOS dependencies
         if: startsWith(matrix.os, 'macos')
@@ -94,15 +124,42 @@ jobs:
 
       # Build binary
       - name: Build binary
-        env:
-          CGO_ENABLED: 1
         shell: bash
         run: |
           echo "Building ${{ matrix.artifact_name }} for ${{ matrix.goos }}/${{ matrix.goarch }}"
           echo "Go version: $(go version)"
-          echo "Environment: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} CGO_ENABLED=1"
           
-          # Build with optimizations (similar to Tala but with CGO)
+          # Set up cross-compilation environment
+          export GOOS=${{ matrix.goos }}
+          export GOARCH=${{ matrix.goarch }}
+          
+          # Handle CGO for different platforms
+          if [[ "${{ matrix.cross_compile }}" == "true" ]]; then
+            echo "Cross-compiling for $GOOS/$GOARCH with CGO disabled"
+            export CGO_ENABLED=0
+          else
+            echo "Native compilation for $GOOS/$GOARCH with CGO enabled"
+            export CGO_ENABLED=1
+            
+            # ARM64 cross-compilation setup on Linux
+            if [[ "${{ matrix.goos }}" == "linux" && "${{ matrix.goarch }}" == "arm64" ]]; then
+              sudo apt-get update
+              sudo apt-get install -y gcc-aarch64-linux-gnu
+              export CC=aarch64-linux-gnu-gcc
+              export CGO_ENABLED=1
+              echo "Set up ARM64 cross-compilation with CC=$CC"
+            fi
+            
+            # ARM64 cross-compilation setup on Windows
+            if [[ "${{ matrix.goos }}" == "windows" && "${{ matrix.goarch }}" == "arm64" ]]; then
+              echo "Windows ARM64 cross-compilation"
+              export CGO_ENABLED=0  # Disable CGO for Windows ARM64 cross-compilation
+            fi
+          fi
+          
+          echo "Environment: GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=$CGO_ENABLED"
+          
+          # Build with optimizations (similar to Tala but with CGO handling)
           go build -v \
             -trimpath \
             -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" \
@@ -114,6 +171,242 @@ jobs:
             powershell -command "Get-Item ${{ matrix.artifact_name }} | Select-Object Name, Length"
           else
             ls -la ${{ matrix.artifact_name }}
+          fi
+
+      # Create Snap package (only for Linux AMD64)
+      - name: Create Snap package
+        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        shell: bash
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          echo "Creating Snap package for version: $VERSION"
+          
+          # Create build directory and copy binary
+          mkdir -p build
+          cp ${{ matrix.artifact_name }} build/
+          
+          # Update snapcraft.yaml with current version
+          sed -i "s/version: git/version: ${VERSION#v}/" snapcraft.yaml
+          
+          # Create Snap package with fallback handling (following Tala's approach)
+          if snapcraft --destructive-mode --verbose; then
+            if ls *.snap 1> /dev/null 2>&1; then
+              SNAP_FILE=$(ls *.snap | head -1)
+              mv "$SNAP_FILE" "shario-$VERSION-linux-amd64.snap"
+              echo "✅ Snap package created successfully: shario-$VERSION-linux-amd64.snap"
+              echo "SNAP_CREATED=true" >> $GITHUB_ENV
+              echo "SNAP_FILE=shario-$VERSION-linux-amd64.snap" >> $GITHUB_ENV
+            else
+              echo "⚠️ Snap build succeeded but no .snap file found"
+              touch "shario-$VERSION-linux-amd64.snap.failed"
+              echo "SNAP_CREATED=false" >> $GITHUB_ENV
+            fi
+          else
+            echo "❌ Snap build failed, creating placeholder"
+            touch "shario-$VERSION-linux-amd64.snap.skipped"
+            echo "SNAP_CREATED=false" >> $GITHUB_ENV
+          fi
+
+      # Create DEB package (only for Linux AMD64)
+      - name: Create DEB package
+        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        shell: bash
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          CLEAN_VERSION=${VERSION#v}
+          echo "Creating DEB package for version: $CLEAN_VERSION"
+          
+          # Create package directory structure
+          mkdir -p shario-deb/usr/bin
+          mkdir -p shario-deb/usr/share/applications
+          mkdir -p shario-deb/usr/share/pixmaps
+          mkdir -p shario-deb/DEBIAN
+          
+          # Copy binary
+          cp ${{ matrix.artifact_name }} shario-deb/usr/bin/shario
+          chmod +x shario-deb/usr/bin/shario
+          
+          # Create desktop file
+          cat > shario-deb/usr/share/applications/shario.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Shario
+          Comment=Cross-platform P2P file sharing with real-time chat
+          Exec=shario
+          Icon=shario
+          Terminal=false
+          Type=Application
+          Categories=Network;FileTransfer;
+          EOF
+          
+          # Create control file
+          cat > shario-deb/DEBIAN/control << EOF
+          Package: shario
+          Version: $CLEAN_VERSION
+          Section: net
+          Priority: optional
+          Architecture: amd64
+          Depends: libc6 (>= 2.17), libgl1-mesa-glx, libxcursor1, libxrandr2, libxinerama1, libxi6, libxxf86vm1, libasound2
+          Maintainer: Shario Team <noreply@example.com>
+          Description: Cross-platform P2P file sharing application
+           Shario is a peer-to-peer file sharing application with real-time chat capabilities.
+           Built with Go, libp2p, and Fyne, it provides secure, decentralized file sharing
+           without the need for central servers.
+          EOF
+          
+          # Build DEB package
+          dpkg-deb --build shario-deb "shario-$CLEAN_VERSION-linux-amd64.deb"
+          
+          if [[ -f "shario-$CLEAN_VERSION-linux-amd64.deb" ]]; then
+            echo "✅ DEB package created successfully: shario-$CLEAN_VERSION-linux-amd64.deb"
+            echo "DEB_CREATED=true" >> $GITHUB_ENV
+            echo "DEB_FILE=shario-$CLEAN_VERSION-linux-amd64.deb" >> $GITHUB_ENV
+          else
+            echo "❌ DEB package creation failed"
+            echo "DEB_CREATED=false" >> $GITHUB_ENV
+          fi
+
+      # Create RPM package (only for Linux AMD64)
+      - name: Create RPM package
+        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        shell: bash
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          CLEAN_VERSION=${VERSION#v}
+          RPM_VERSION=${CLEAN_VERSION//-/.}  # Convert 1.0.0-rc.8 to 1.0.0.rc.8 for RPM
+          echo "Creating RPM package for version: $RPM_VERSION"
+          
+          # Create RPM build directory structure
+          mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+          
+          # Create tarball for RPM
+          mkdir -p shario-$CLEAN_VERSION
+          cp ${{ matrix.artifact_name }} shario-$CLEAN_VERSION/shario
+          tar -czf ~/rpmbuild/SOURCES/shario-$CLEAN_VERSION.tar.gz shario-$CLEAN_VERSION
+          
+          # Create RPM spec file
+          cat > ~/rpmbuild/SPECS/shario.spec << EOF
+          Name: shario
+          Version: $RPM_VERSION
+          Release: 1
+          Summary: Cross-platform P2P file sharing application
+          License: MIT
+          URL: https://github.com/domykasas/shario
+          Source0: shario-$CLEAN_VERSION.tar.gz
+          
+          Requires: glibc, mesa-libGL, libXcursor, libXrandr, libXinerama, libXi, libXxf86vm, alsa-lib
+          
+          %description
+          Shario is a peer-to-peer file sharing application with real-time chat capabilities.
+          Built with Go, libp2p, and Fyne, it provides secure, decentralized file sharing
+          without the need for central servers.
+          
+          %prep
+          %setup -q
+          
+          %build
+          # Binary already built
+          
+          %install
+          mkdir -p %{buildroot}/usr/bin
+          mkdir -p %{buildroot}/usr/share/applications
+          install -m 755 shario %{buildroot}/usr/bin/shario
+          
+          cat > %{buildroot}/usr/share/applications/shario.desktop << 'DESKTOP_EOF'
+          [Desktop Entry]
+          Name=Shario
+          Comment=Cross-platform P2P file sharing with real-time chat
+          Exec=shario
+          Icon=shario
+          Terminal=false
+          Type=Application
+          Categories=Network;FileTransfer;
+          DESKTOP_EOF
+          
+          %files
+          /usr/bin/shario
+          /usr/share/applications/shario.desktop
+          
+          %changelog
+          * $(date +'%a %b %d %Y') Shario Team <noreply@example.com> - $RPM_VERSION-1
+          - Release $RPM_VERSION
+          EOF
+          
+          # Build RPM package
+          rpmbuild -ba ~/rpmbuild/SPECS/shario.spec
+          
+          if [[ -f ~/rpmbuild/RPMS/x86_64/shario-$RPM_VERSION-1.x86_64.rpm ]]; then
+            cp ~/rpmbuild/RPMS/x86_64/shario-$RPM_VERSION-1.x86_64.rpm "shario-$CLEAN_VERSION-linux-x86_64.rpm"
+            echo "✅ RPM package created successfully: shario-$CLEAN_VERSION-linux-x86_64.rpm"
+            echo "RPM_CREATED=true" >> $GITHUB_ENV
+            echo "RPM_FILE=shario-$CLEAN_VERSION-linux-x86_64.rpm" >> $GITHUB_ENV
+          else
+            echo "❌ RPM package creation failed"
+            echo "RPM_CREATED=false" >> $GITHUB_ENV
+          fi
+
+      # Create AppImage package (only for Linux AMD64)
+      - name: Create AppImage package
+        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        shell: bash
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          CLEAN_VERSION=${VERSION#v}
+          echo "Creating AppImage package for version: $CLEAN_VERSION"
+          
+          # Create AppDir structure
+          mkdir -p Shario.AppDir/usr/bin
+          mkdir -p Shario.AppDir/usr/share/applications
+          mkdir -p Shario.AppDir/usr/share/pixmaps
+          
+          # Copy binary
+          cp ${{ matrix.artifact_name }} Shario.AppDir/usr/bin/shario
+          chmod +x Shario.AppDir/usr/bin/shario
+          
+          # Create desktop file
+          cat > Shario.AppDir/shario.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Shario
+          Comment=Cross-platform P2P file sharing with real-time chat
+          Exec=shario
+          Icon=shario
+          Terminal=false
+          Type=Application
+          Categories=Network;FileTransfer;
+          EOF
+          
+          # Copy desktop file to proper location
+          cp Shario.AppDir/shario.desktop Shario.AppDir/usr/share/applications/
+          
+          # Create AppRun script
+          cat > Shario.AppDir/AppRun << 'EOF'
+          #!/bin/bash
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          exec "${HERE}/usr/bin/shario" "$@"
+          EOF
+          chmod +x Shario.AppDir/AppRun
+          
+          # Create a simple icon (placeholder)
+          echo "Creating placeholder icon..."
+          cat > Shario.AppDir/shario.svg << 'EOF'
+          <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <rect width="48" height="48" fill="#4285f4"/>
+            <text x="24" y="30" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold">S</text>
+          </svg>
+          EOF
+          
+          # Try to create AppImage
+          if [[ -f /tmp/appimagetool ]]; then
+            if /tmp/appimagetool Shario.AppDir "shario-$CLEAN_VERSION-linux-x86_64.AppImage" 2>/dev/null; then
+              echo "✅ AppImage created successfully: shario-$CLEAN_VERSION-linux-x86_64.AppImage"
+              echo "APPIMAGE_CREATED=true" >> $GITHUB_ENV
+              echo "APPIMAGE_FILE=shario-$CLEAN_VERSION-linux-x86_64.AppImage" >> $GITHUB_ENV
+            else
+              echo "❌ AppImage creation failed"
+              echo "APPIMAGE_CREATED=false" >> $GITHUB_ENV
+            fi
+          else
+            echo "❌ AppImage tool not found"
+            echo "APPIMAGE_CREATED=false" >> $GITHUB_ENV
           fi
 
       # Create platform-specific archives (following Tala's approach)
@@ -134,6 +427,26 @@ jobs:
             # Unix: create tar.gz
             tar -czf "${{ matrix.asset_name }}-$VERSION.tar.gz" "${{ matrix.artifact_name }}"
             echo "ASSET_PATH=${{ matrix.asset_name }}-$VERSION.tar.gz" >> $GITHUB_ENV
+            
+            # For Linux AMD64, also prepare additional packages if they were created
+            if [[ "${{ matrix.goos }}" == "linux" && "${{ matrix.goarch }}" == "amd64" ]]; then
+              if [[ "${{ env.SNAP_CREATED }}" == "true" ]]; then
+                echo "SNAP_ASSET_PATH=${{ env.SNAP_FILE }}" >> $GITHUB_ENV
+                echo "Including Snap package in assets: ${{ env.SNAP_FILE }}"
+              fi
+              if [[ "${{ env.DEB_CREATED }}" == "true" ]]; then
+                echo "DEB_ASSET_PATH=${{ env.DEB_FILE }}" >> $GITHUB_ENV
+                echo "Including DEB package in assets: ${{ env.DEB_FILE }}"
+              fi
+              if [[ "${{ env.RPM_CREATED }}" == "true" ]]; then
+                echo "RPM_ASSET_PATH=${{ env.RPM_FILE }}" >> $GITHUB_ENV
+                echo "Including RPM package in assets: ${{ env.RPM_FILE }}"
+              fi
+              if [[ "${{ env.APPIMAGE_CREATED }}" == "true" ]]; then
+                echo "APPIMAGE_ASSET_PATH=${{ env.APPIMAGE_FILE }}" >> $GITHUB_ENV
+                echo "Including AppImage package in assets: ${{ env.APPIMAGE_FILE }}"
+              fi
+            fi
           fi
 
       # Upload artifacts
@@ -142,6 +455,42 @@ jobs:
         with:
           name: ${{ matrix.asset_name }}-${{ steps.version.outputs.VERSION }}
           path: ${{ env.ASSET_PATH }}
+          retention-days: 30
+
+      # Upload Snap package (only for Linux AMD64 if created)
+      - name: Upload Snap package
+        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64' && env.SNAP_CREATED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shario-snap-${{ steps.version.outputs.VERSION }}
+          path: ${{ env.SNAP_ASSET_PATH }}
+          retention-days: 30
+
+      # Upload DEB package (only for Linux AMD64 if created)
+      - name: Upload DEB package
+        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64' && env.DEB_CREATED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shario-deb-${{ steps.version.outputs.VERSION }}
+          path: ${{ env.DEB_ASSET_PATH }}
+          retention-days: 30
+
+      # Upload RPM package (only for Linux AMD64 if created)
+      - name: Upload RPM package
+        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64' && env.RPM_CREATED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shario-rpm-${{ steps.version.outputs.VERSION }}
+          path: ${{ env.RPM_ASSET_PATH }}
+          retention-days: 30
+
+      # Upload AppImage package (only for Linux AMD64 if created)
+      - name: Upload AppImage package
+        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64' && env.APPIMAGE_CREATED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shario-appimage-${{ steps.version.outputs.VERSION }}
+          path: ${{ env.APPIMAGE_ASSET_PATH }}
           retention-days: 30
 
   # Create GitHub release (simplified approach like Tala)
@@ -185,10 +534,24 @@ jobs:
           
           Choose the appropriate binary for your platform:
           
+          ### Windows
           - **Windows (x64)**: \`shario-windows-amd64-$VERSION.zip\`
-          - **Linux (x64)**: \`shario-linux-amd64-$VERSION.tar.gz\`  
+          - **Windows (ARM64)**: \`shario-windows-arm64-$VERSION.zip\`
+          
+          ### Linux
+          - **Binary (x64)**: \`shario-linux-amd64-$VERSION.tar.gz\`
+          - **Binary (ARM64)**: \`shario-linux-arm64-$VERSION.tar.gz\`
+          - **DEB Package**: \`shario-$VERSION-linux-amd64.deb\` (Debian/Ubuntu)
+          - **RPM Package**: \`shario-$VERSION-linux-x86_64.rpm\` (Red Hat/Fedora)
+          - **Snap Package**: \`shario-$VERSION-linux-amd64.snap\` (Universal Linux)
+          - **AppImage**: \`shario-$VERSION-linux-x86_64.AppImage\` (Portable Linux)
+          
+          ### macOS
           - **macOS (Intel)**: \`shario-darwin-amd64-$VERSION.tar.gz\`
-          - **macOS (Apple Silicon)**: \`shario-darwin-amd64-intel-$VERSION.tar.gz\`
+          - **macOS (Apple Silicon)**: \`shario-darwin-arm64-$VERSION.tar.gz\`
+          
+          ### FreeBSD
+          - **FreeBSD (x64)**: \`shario-freebsd-amd64-$VERSION.tar.gz\`
           
           ## Installation
           

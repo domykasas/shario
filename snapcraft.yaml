@@ -1,0 +1,50 @@
+name: shario
+version: git
+summary: Cross-platform P2P file sharing with real-time chat
+description: |
+ Shario is a cross-platform peer-to-peer file sharing application with real-time chat capabilities. 
+ Built with Go, libp2p, and Fyne, it provides secure, decentralized file sharing without the need 
+ for central servers. Features include automatic peer discovery, encrypted file transfers, 
+ real-time messaging, and a user-friendly GUI.
+
+grade: stable
+confinement: strict
+base: core20
+
+architectures:
+ - build-on: amd64
+
+apps:
+ shario:
+  command: bin/shario
+  plugs:
+   - home
+   - network
+   - network-bind
+   - desktop
+   - desktop-legacy
+   - x11
+   - wayland
+   - opengl
+   - audio-playback
+   - removable-media
+   - personal-files
+
+parts:
+ shario:
+  plugin: dump
+  source: build/
+  organize:
+   'shario-*-linux-amd64': bin/shario
+  stage:
+   - bin/shario
+
+plugs:
+ personal-files:
+  interface: personal-files
+  read:
+   - $HOME/.shario
+   - $HOME/Downloads/Shario
+  write:
+   - $HOME/.shario
+   - $HOME/Downloads/Shario

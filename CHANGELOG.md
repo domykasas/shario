@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.8] - 2025-07-11
+
+### Added
+- **COMPREHENSIVE PACKAGE FORMATS**: Added complete Linux package ecosystem matching Tala's offerings
+  - **DEB packages**: Debian/Ubuntu package format with proper dependencies and desktop integration
+  - **RPM packages**: Red Hat/Fedora package format with spec file and changelog
+  - **Snap packages**: Universal Linux package with strict confinement and GUI permissions
+  - **AppImage packages**: Portable Linux package with embedded dependencies
+  - **Binary archives**: Traditional tar.gz for all platforms
+  - **Professional packaging**: Desktop files, icons, and proper system integration
+- **EXPANDED PLATFORM SUPPORT**: Added comprehensive multi-platform and multi-architecture builds like Tala
+  - **Linux**: AMD64 and ARM64 architectures (6 package formats for AMD64)
+  - **Windows**: AMD64 and ARM64 architectures  
+  - **macOS**: Intel (AMD64) and Apple Silicon (ARM64) architectures
+  - **FreeBSD**: AMD64 architecture (cross-compiled)
+  - **Total**: 7 different platform/architecture combinations + 6 Linux package formats
+- **Smart cross-compilation**: Automatic CGO handling for different platforms
+  - Native compilation with CGO for supported platforms
+  - Cross-compilation with CGO disabled for unsupported combinations
+  - ARM64 cross-compilation support on Linux with proper GCC toolchain
+- **Enhanced release assets**: Professional release notes with organized platform sections
+
+### Changed
+- **Release workflow**: Expanded build matrix from 4 to 7 platform/architecture combinations
+- **Build optimization**: Improved cross-compilation handling for ARM64 and FreeBSD targets
+- **Release notes**: Better organized download section with platform-specific grouping
+
 ## [1.0.0-rc.7] - 2025-07-11
 
 ### Changed
