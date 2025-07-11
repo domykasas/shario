@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2025-07-11
+
+### Added
+- **Documentation Enhancement**: Added comprehensive Claude Code working patterns to CLAUDE.md
+  - Problem-solving approach and recent successful fixes documentation
+  - Communication style and version management strategy
+  - Technical details for file transfer system and GitHub Actions workflows
+  - User interaction preferences and quality standards
+- **README Improvements**: Added professional badges and Quick Download section
+  - Version, Go, and License badges matching Tala's format
+  - Direct link to latest release for easy access
+  - Professional visual presentation
+
 ## [1.0.3] - 2025-07-11
 
 ### Fixed
