@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 **Shario** - Cross-platform P2P file-sharing application with real-time chat
-- **Current Version**: 1.0.5 (Stable Release - 2025-07-11)
+- **Current Version**: 1.0.6 (Stable Release - 2025-07-11)
 - **Language**: Go 1.20+
 - **GUI**: Fyne framework
 - **Networking**: libp2p (mDNS + DHT discovery)
@@ -261,3 +261,12 @@ CGO conflicts with GUI frameworks
 2. `README.md` - Version badge AND Current Status section
 3. `CHANGELOG.md` - Add new version section with changes
 4. Git tag: `git tag v1.0.X`
+
+### Critical Build Testing Rule
+🚨 **NEVER USE "go build"** - Use "go test" instead:
+- **Don't use**: `go build .` (creates executable in directory)
+- **Use instead**: `go test ./...` (tests compilation without creating files)
+- **Reason**: Executables are large (50+ MB) and bloat git repository
+- **Human preference**: User will handle builds themselves when needed
+- **Testing compilation**: `go test ./...` verifies code compiles correctly
+- **Only exception**: When explicitly asked to build by user

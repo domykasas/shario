@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] - 2025-07-11
+
+### Added
+- **Development Guidelines**: Added critical build testing rule to CLAUDE.md
+  - Never use "go build" - use "go test ./..." instead for compilation verification
+  - Prevents large executable files (50+ MB) from being committed to git repository
+  - Documented human preference for handling builds independently
+  - Added prominent warning to prevent future repository bloat issues
+
 ## [1.0.5] - 2025-07-11
 
 ### Added
