@@ -43,7 +43,7 @@ func New() (*App, error) {
 	}
 
 	// Initialize network manager
-	networkMgr, err := network.New(identityMgr)
+	networkMgr, err := network.New(ctx, identityMgr)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to create network manager: %w", err)
@@ -53,7 +53,7 @@ func New() (*App, error) {
 	transferMgr := transfer.New(networkMgr)
 
 	// Initialize chat manager
-	chatMgr := chat.New(networkMgr, identityMgr)
+	chatMgr := chat.New(networkMgr)
 
 	// Create application instance
 	app := &App{
