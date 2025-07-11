@@ -26,8 +26,8 @@ jobs:
           - os: ubuntu-latest
             goos: linux
             goarch: arm64
-            artifact_name: shario-linux-arm64
-            asset_name: shario-linux-arm64
+            artifact_name: shario-linux-arm64-headless
+            asset_name: shario-linux-arm64-headless
             cross_compile: true
             headless_mode: true
           
@@ -41,8 +41,8 @@ jobs:
           - os: windows-latest
             goos: windows
             goarch: arm64
-            artifact_name: shario-windows-arm64.exe
-            asset_name: shario-windows-arm64.exe
+            artifact_name: shario-windows-arm64-headless.exe
+            asset_name: shario-windows-arm64-headless.exe
             cross_compile: true
             headless_mode: true
             
@@ -63,10 +63,10 @@ jobs:
           - os: ubuntu-latest
             goos: freebsd
             goarch: amd64
-            artifact_name: shario-freebsd-amd64
-            asset_name: shario-freebsd-amd64
+            artifact_name: shario-freebsd-amd64-headless
+            asset_name: shario-freebsd-amd64-headless
             cross_compile: true
-            cgo_disabled: true
+            headless_mode: true
 
     steps:
       - name: Checkout code
@@ -536,11 +536,11 @@ jobs:
           
           ### Windows
           - **Windows (x64)**: \`shario-windows-amd64-$VERSION.zip\` (GUI)
-          - **Windows (ARM64)**: \`shario-windows-arm64-$VERSION.zip\` (headless)
+          - **Windows (ARM64)**: \`shario-windows-arm64-headless-$VERSION.zip\` (headless)
           
           ### Linux
           - **Binary (x64)**: \`shario-linux-amd64-$VERSION.tar.gz\` (GUI)
-          - **Binary (ARM64)**: \`shario-linux-arm64-$VERSION.tar.gz\` (headless)
+          - **Binary (ARM64)**: \`shario-linux-arm64-headless-$VERSION.tar.gz\` (headless)
           - **DEB Package**: \`shario-$VERSION-linux-amd64.deb\` (Debian/Ubuntu)
           - **RPM Package**: \`shario-$VERSION-linux-x86_64.rpm\` (Red Hat/Fedora)
           - **Snap Package**: \`shario-$VERSION-linux-amd64.snap\` (Universal Linux)
@@ -551,7 +551,7 @@ jobs:
           - **macOS (Apple Silicon)**: \`shario-darwin-arm64-$VERSION.tar.gz\`
           
           ### FreeBSD
-          - **FreeBSD (x64)**: \`shario-freebsd-amd64-$VERSION.tar.gz\` (headless mode)
+          - **FreeBSD (x64)**: \`shario-freebsd-amd64-headless-$VERSION.tar.gz\` (headless mode)
           
           ## Installation
           

@@ -1,7 +1,7 @@
-//go:build !headless
-// +build !headless
+//go:build headless
+// +build headless
 
-// Package app provides the main application structure and initialization
+// Package app provides the main application structure for headless mode
 package app
 
 import (
@@ -12,38 +12,28 @@ import (
 	"shario/internal/identity"
 	"shario/internal/network"
 	"shario/internal/transfer"
-	"shario/internal/ui"
 	"sync"
-
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/widget"
 )
 
-// App represents the main Shario application
+// App represents the main Shario application in headless mode
 type App struct {
-	// Core components
+	// Core components (no UI manager)
 	identity *identity.Manager
 	network  *network.Manager
 	transfer *transfer.Manager
 	chat     *chat.Manager
-	ui       *ui.Manager
 
 	// Application state
 	ctx       context.Context
 	cancel    context.CancelFunc
 	wg        sync.WaitGroup
-	fyneApp   fyne.App
 	isRunning bool
 	mu        sync.RWMutex
 }
 
-// New creates a new Shario application instance
+// New creates a new Shario application instance in headless mode
 func New() (*App, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-
-	// Create Fyne application
-	fyneApp := app.New()
 
 	// Initialize identity manager
 	identityMgr, err := identity.New()
@@ -53,7 +43,7 @@ func New() (*App, error) {
 	}
 
 	// Initialize network manager
-	networkMgr, err := network.New(ctx, identityMgr)
+	networkMgr, err := network.New(identityMgr)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to create network manager: %w", err)
@@ -63,73 +53,27 @@ func New() (*App, error) {
 	transferMgr := transfer.New(networkMgr)
 
 	// Initialize chat manager
-	chatMgr := chat.New(networkMgr)
+	chatMgr := chat.New(networkMgr, identityMgr)
 
-	// Initialize UI manager
-	uiMgr := ui.New(fyneApp, identityMgr, networkMgr, transferMgr, chatMgr)
-
-	// Set initial nickname in chat manager
-	chatMgr.SetNickname(identityMgr.GetNickname())
-
-	return &App{
+	// Create application instance
+	app := &App{
 		identity: identityMgr,
 		network:  networkMgr,
 		transfer: transferMgr,
 		chat:     chatMgr,
-		ui:       uiMgr,
 		ctx:      ctx,
 		cancel:   cancel,
-		fyneApp:  fyneApp,
-	}, nil
-}
-
-// Run starts the Shario application
-func (a *App) Run() error {
-	a.mu.Lock()
-	if a.isRunning {
-		a.mu.Unlock()
-		return fmt.Errorf("application is already running")
 	}
-	a.isRunning = true
-	a.mu.Unlock()
 
-	// Start background services
-	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
-		if err := a.network.Start(); err != nil {
-			log.Printf("Network manager error: %v", err)
-		}
-	}()
-
-	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
-		if err := a.chat.Start(); err != nil {
-			log.Printf("Chat manager error: %v", err)
-		}
-	}()
-
-	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
-		if err := a.transfer.Start(); err != nil {
-			log.Printf("Transfer manager error: %v", err)
-		}
-	}()
-
-	// Show main window and run GUI
-	a.ui.ShowMainWindow()
-	a.fyneApp.Run()
-
-	// Cleanup
-	a.cancel()
-	a.wg.Wait()
-
-	return nil
+	return app, nil
 }
 
-// RunHeadless starts the application without GUI (for platforms without GUI support)
+// Run starts the application in headless mode (not used in headless builds)
+func (a *App) Run() error {
+	return fmt.Errorf("Run() not available in headless mode, use RunHeadless() instead")
+}
+
+// RunHeadless starts the application without GUI
 func (a *App) RunHeadless() error {
 	a.mu.Lock()
 	if a.isRunning {
@@ -185,7 +129,7 @@ func (a *App) Shutdown() {
 
 	a.isRunning = false
 	a.cancel()
-	a.fyneApp.Quit()
+	// No GUI to quit in headless mode
 }
 
 // GetStatus returns the current application status
@@ -202,20 +146,4 @@ func (a *App) GetStatus() map[string]interface{} {
 	}
 
 	return status
-}
-
-// GetPeers returns a list of connected peers for the UI
-func (a *App) GetPeers() []*widget.Card {
-	peers := a.network.GetPeers()
-	cards := make([]*widget.Card, len(peers))
-
-	for i, peer := range peers {
-		cards[i] = widget.NewCard(
-			peer.Nickname,
-			peer.ID,
-			widget.NewLabel(fmt.Sprintf("Connected: %s", peer.ConnectedAt.Format("15:04:05"))),
-		)
-	}
-
-	return cards
 }

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.12] - 2025-07-11
+
+### Fixed
+- **Headless Build Architecture**: Fixed import issues in headless mode builds
+  - Created separate app_headless.go that excludes Fyne/GUI dependencies entirely
+  - Added build constraints to properly separate GUI and headless code paths
+  - ARM64 builds now compile successfully without GUI library conflicts
+  - Resolves "build constraints exclude all Go files" errors
+
+### Changed
+- **Binary Naming**: Updated filenames to clearly indicate headless mode
+  - ARM64 binaries now include "headless" in filename
+  - FreeBSD binaries now include "headless" in filename
+  - Windows executables now properly use .exe extension
+- **Architecture**: Improved conditional compilation for headless vs GUI modes
+  - app.go: GUI mode only (//go:build !headless)
+  - app_headless.go: Headless mode only (//go:build headless)
+  - Clean separation prevents import conflicts
+
 ## [1.0.0-rc.11] - 2025-07-11
 
 ### Fixed
