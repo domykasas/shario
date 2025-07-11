@@ -35,7 +35,7 @@ parts:
   plugin: dump
   source: build/
   organize:
-   'shario-*-linux-amd64': bin/shario
+   'shario-linux-amd64': bin/shario
   stage:
    - bin/shario
 

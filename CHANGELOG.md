@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.14] - 2025-07-11
+
+### Fixed
+- **Release Workflow**: Fixed RPM package creation in GitHub Actions
+  - Corrected version formatting mismatch between tarball directory name and RPM spec
+  - Fixed RPM build error where `shario-1.0.0-rc.13` directory was expected but `shario-1.0.0.rc.13` was created
+  - Updated snapcraft.yaml to properly handle binary organization
+  - All Linux package formats (DEB, RPM, Snap, AppImage) should now build successfully
+
 ## [1.0.0-rc.13] - 2025-07-11
 
 ### Fixed

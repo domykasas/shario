@@ -278,10 +278,10 @@ jobs:
           # Create RPM build directory structure
           mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
           
-          # Create tarball for RPM
-          mkdir -p shario-$CLEAN_VERSION
-          cp ${{ matrix.artifact_name }} shario-$CLEAN_VERSION/shario
-          tar -czf ~/rpmbuild/SOURCES/shario-$CLEAN_VERSION.tar.gz shario-$CLEAN_VERSION
+          # Create tarball for RPM - use RPM_VERSION for directory name consistency
+          mkdir -p shario-$RPM_VERSION
+          cp ${{ matrix.artifact_name }} shario-$RPM_VERSION/shario
+          tar -czf ~/rpmbuild/SOURCES/shario-$RPM_VERSION.tar.gz shario-$RPM_VERSION
           
           # Create RPM spec file
           cat > ~/rpmbuild/SPECS/shario.spec << EOF
@@ -291,7 +291,7 @@ jobs:
           Summary: Cross-platform P2P file sharing application
           License: MIT
           URL: https://github.com/domykasas/shario
-          Source0: shario-$CLEAN_VERSION.tar.gz
+          Source0: shario-$RPM_VERSION.tar.gz
           
           Requires: glibc, mesa-libGL, libXcursor, libXrandr, libXinerama, libXi, libXxf86vm, alsa-lib
           
