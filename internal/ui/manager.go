@@ -90,24 +90,6 @@ func createStatusLabel(text string, status string) *canvas.Text {
 	return createColoredLabel(text, textColor)
 }
 
-// updateStatus updates the main status label with colored text
-func (m *Manager) updateStatus(text string, status string) {
-	if m.statusLabel != nil {
-		m.statusLabel.SetText(text)
-		switch status {
-		case "success", "completed", "connected":
-			m.statusLabel.TextStyle = fyne.TextStyle{Bold: true}
-		case "error", "failed", "disconnected":
-			m.statusLabel.TextStyle = fyne.TextStyle{Bold: true, Italic: true}
-		case "warning", "pending", "connecting":
-			m.statusLabel.TextStyle = fyne.TextStyle{Italic: true}
-		default:
-			m.statusLabel.TextStyle = fyne.TextStyle{}
-		}
-		m.statusLabel.Refresh()
-	}
-}
-
 // New creates a new UI manager
 func New(fyneApp fyne.App, identityMgr *identity.Manager, networkMgr *network.Manager, transferMgr *transfer.Manager, chatMgr *chat.Manager) *Manager {
 	manager := &Manager{

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.7] - 2025-07-11
+
+### Fixed
+- **Code Quality**: Fixed staticcheck warning about unused function
+  - Removed unused `updateStatus(text, status)` method from UI manager
+  - Resolved staticcheck error: "func (*Manager).updateStatus is unused (U1000)"
+  - Code now passes static analysis without warnings
+
 ## [1.0.6] - 2025-07-11
 
 ### Added
