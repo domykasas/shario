@@ -184,3 +184,66 @@ CGO conflicts with GUI frameworks
 - UI uses Fyne data binding for real-time updates
 - Cross-platform file operations detect runtime.GOOS
 - Headless builds enable ARM64/FreeBSD support without GUI dependencies
+
+## Claude Code Working Style & Recent Successful Patterns
+
+### Problem-Solving Approach
+**When user reports issues:**
+1. **Understand the problem** - Read error messages carefully, identify root cause
+2. **Fix systematically** - Make targeted changes, don't over-engineer
+3. **Update documentation** - Always update CHANGELOG.md and version references
+4. **Test thoroughly** - Consider edge cases and platform differences
+
+### Recent Successful Fixes
+**File Transfer Bug (Empty Files):**
+- **Root Cause**: 4KB chunks + base64 encoding exceeded network message limits
+- **Solution**: Reduced chunk size from 4KB to 1KB in `transfer/manager.go:604`
+- **Key Learning**: JSON + base64 overhead can exceed protocol limits even with small chunks
+
+**GitHub Actions Workflow Issues:**
+- **DMG Artifact Conflict**: Both macOS builds used same artifact name
+- **Solution**: Made architecture-specific: `shario-macos-dmg-{arch}-VERSION`
+- **Windows Zip Error**: `zip` command not available on Windows runners
+- **Solution**: Used PowerShell `Compress-Archive` for Windows builds
+
+### Effective Communication Pattern
+- **Be concise** - Answer directly without unnecessary explanation
+- **Use specific file paths** - Reference exact locations like `transfer/manager.go:604`
+- **Show what changed** - Explain the fix but don't over-explain
+- **Proactive versioning** - Auto-increment versions for each significant fix
+
+### Version Management Strategy
+- **Patch releases** (1.0.1 → 1.0.2 → 1.0.3) for bug fixes
+- **Update all references** in CLAUDE.md, README.md, CHANGELOG.md
+- **Clear changelog entries** with specific technical details
+- **Git workflow**: add → commit → tag → push (when requested)
+
+### Key Technical Details to Remember
+**File Transfer System:**
+- Location: `internal/transfer/manager.go`
+- Chunk size: 1KB (line 604: `const chunkSize = 1024`)
+- Base64 encoding for JSON transport
+- Flow: Offer → Accept → Data chunks → Complete
+
+**GitHub Actions:**
+- Windows builds use PowerShell `Compress-Archive` not `zip`
+- macOS DMG artifacts need architecture-specific naming
+- Headless builds use `CGO_ENABLED=0` with `-tags headless`
+
+**Build Matrix:**
+- 7 platform/architecture combinations
+- GUI builds: Linux x64, Windows x64, macOS Intel/ARM64
+- Headless builds: Linux ARM64, Windows ARM64, FreeBSD x64
+
+### User Interaction Style
+- **Direct requests** like "Do git push" - execute immediately without questions
+- **Problem reports** - Analyze, fix, update docs, version bump
+- **Collaborative** - User provides context, I provide technical solutions
+- **Efficient** - Minimize back-and-forth, be proactive with related fixes
+
+### Quality Standards
+- **All changes** must update CHANGELOG.md
+- **Version consistency** across all documentation files
+- **Professional git commits** with clear, technical messages
+- **No Claude attribution** in git commits (user preference)
+- **Human controls git push** - wait for explicit request

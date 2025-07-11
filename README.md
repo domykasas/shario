@@ -1,6 +1,14 @@
 # Shario - P2P File Sharing Application
 
+[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://github.com/domykasas/shario/releases/latest)
+[![Go](https://img.shields.io/badge/Go-1.20+-00ADD8.svg)](https://go.dev/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/domykasas/shario?tab=MIT-1-ov-file#MIT-1-ov-file)
+
 Shario is a cross-platform peer-to-peer file sharing application with real-time chat capabilities. Built with Go, libp2p, and Fyne, it provides secure, decentralized file sharing without the need for central servers.
+
+## 🚀 Quick Download
+
+**Latest Release:** [Download Shario](https://github.com/domykasas/shario/releases/latest) - Get the newest version for your platform
 
 ## Features
 
