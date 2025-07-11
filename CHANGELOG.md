@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2025-07-11
+
+### Fixed
+- **GitHub Actions Workflow**: Fixed DMG artifact naming conflict in release workflow
+  - Both macOS builds (Intel and ARM64) were trying to create artifacts with the same name
+  - Updated DMG artifacts to use architecture-specific names: `shario-macos-dmg-amd64-VERSION` and `shario-macos-dmg-arm64-VERSION`
+  - Updated DMG file creation to use unique filenames: `shario-VERSION-macos-amd64.dmg` and `shario-VERSION-macos-arm64.dmg`
+  - Updated release notes template to reflect separate Intel and ARM64 DMG downloads
+  - Resolved 409 Conflict error: "Failed to CreateArtifact: an artifact with this name already exists"
+
 ## [1.0.1] - 2025-07-11
 
 ### Fixed

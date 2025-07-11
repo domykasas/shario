@@ -509,14 +509,10 @@ jobs:
               mkdir -p dmg
               cp "${{ matrix.artifact_name }}" dmg/Shario
               
-              # Create DMG with Tala naming
-              if [[ "${{ matrix.goarch }}" == "arm64" ]]; then
-                hdiutil create -volname "Shario" -srcfolder dmg -ov -format UDZO "shario-$VERSION-macos.dmg"
-                echo "DMG_PATH=shario-$VERSION-macos.dmg" >> $GITHUB_ENV
-              else
-                hdiutil create -volname "Shario" -srcfolder dmg -ov -format UDZO "shario-$VERSION-macos.dmg"
-                echo "DMG_PATH=shario-$VERSION-macos.dmg" >> $GITHUB_ENV
-              fi
+              # Create DMG with architecture-specific naming
+              DMG_NAME="shario-$VERSION-macos-${{ matrix.goarch }}.dmg"
+              hdiutil create -volname "Shario" -srcfolder dmg -ov -format UDZO "$DMG_NAME"
+              echo "DMG_PATH=$DMG_NAME" >> $GITHUB_ENV
             fi
             
           else
@@ -557,7 +553,7 @@ jobs:
         if: matrix.goos == 'darwin' && env.DMG_PATH != ''
         uses: actions/upload-artifact@v4
         with:
-          name: shario-macos-dmg-${{ steps.version.outputs.VERSION }}
+          name: shario-macos-dmg-${{ matrix.goarch }}-${{ steps.version.outputs.VERSION }}
           path: ${{ env.DMG_PATH }}
           retention-days: 30
 
@@ -659,7 +655,8 @@ jobs:
           ### macOS
           | Format | Description | Download |
           |---------|-------------|----------|
-          | DMG | macOS disk image | \`shario-$VERSION-macos.dmg\` |
+          | DMG (Intel) | macOS disk image for Intel | \`shario-$VERSION-macos-amd64.dmg\` |
+          | DMG (Apple Silicon) | macOS disk image for ARM64 | \`shario-$VERSION-macos-arm64.dmg\` |
           | Intel | Intel binary | \`shario-$VERSION-macos-amd64\` |
           | Apple Silicon | ARM64 binary | \`shario-$VERSION-macos-arm64\` |
           

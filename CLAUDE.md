@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 **Shario** - Cross-platform P2P file-sharing application with real-time chat
-- **Current Version**: 1.0.1 (Stable Release - 2025-07-11)
+- **Current Version**: 1.0.2 (Stable Release - 2025-07-11)
 - **Language**: Go 1.20+
 - **GUI**: Fyne framework
 - **Networking**: libp2p (mDNS + DHT discovery)
