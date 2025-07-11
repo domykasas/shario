@@ -370,6 +370,20 @@ func (m *Manager) OnMessage(peerID peer.ID, protocol protocol.ID, data []byte) {
 	var msg TransferMessage
 	if err := json.Unmarshal(data, &msg); err != nil {
 		log.Printf("📁 Transfer: Failed to unmarshal transfer message: %v", err)
+		log.Printf("📁 Transfer: Received data size: %d bytes", len(data))
+		// Show first and last 100 bytes for debugging
+		start := 100
+		if len(data) < start {
+			start = len(data)
+		}
+		end := len(data) - 100
+		if end < 0 {
+			end = 0
+		}
+		log.Printf("📁 Transfer: First %d bytes: %s", start, string(data[:start]))
+		if end > 0 {
+			log.Printf("📁 Transfer: Last 100 bytes: %s", string(data[end:]))
+		}
 		return
 	}
 
@@ -421,6 +435,7 @@ func (m *Manager) sendMessage(peerID peer.ID, msg TransferMessage) error {
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}
 
+	log.Printf("📁 sendMessage: Marshaled message size: %d bytes", len(data))
 	return m.network.SendMessage(peerID, network.TransferProtocol, data)
 }
 
@@ -586,7 +601,7 @@ func (m *Manager) sendFile(transfer *Transfer) {
 	log.Printf("📁 sendFile: File size: %d bytes", fileSize)
 
 	// Send file in chunks
-	const chunkSize = 4 * 1024 // 4KB chunks (smaller for debugging)
+	const chunkSize = 1024 // 1KB chunks to avoid network message size limits
 	buffer := make([]byte, chunkSize)
 	var totalSent int64 = 0
 	chunkIndex := 0
@@ -665,6 +680,7 @@ func (m *Manager) sendFileChunk(transfer *Transfer, chunkIndex int, data []byte,
 
 	// Encode data as base64 for JSON transport
 	encodedData := base64.StdEncoding.EncodeToString(data)
+	log.Printf("📁 sendFileChunk: Original data size: %d bytes", len(data))
 	log.Printf("📁 sendFileChunk: Encoded data size: %d characters", len(encodedData))
 
 	msg := TransferMessage{

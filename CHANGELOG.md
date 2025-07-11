@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-07-11
+
+### Fixed
+- **File Transfer Bug**: Fixed empty file transfer issue caused by JSON message size limits
+  - Reduced chunk size from 4KB to 1KB to avoid network protocol limits
+  - Base64 encoding + JSON overhead was exceeding ~4KB network message limits
+  - Added debug logging to track message sizes and identify truncation issues
+  - File transfers now work correctly with proper content preservation
+
+### Changed
+- **Documentation**: Updated CLAUDE.md with file transfer troubleshooting information
+- **Development Notes**: Updated chunk size references from 4KB to 1KB throughout codebase
+
 ## [1.0.0-rc.18] - 2025-07-11
 
 ### Fixed
