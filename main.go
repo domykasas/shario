@@ -1,3 +1,6 @@
+//go:build !headless
+// +build !headless
+
 // Package main implements Shario, a cross-platform P2P file-sharing application
 // with real-time chat capabilities built using libp2p and Fyne.
 package main

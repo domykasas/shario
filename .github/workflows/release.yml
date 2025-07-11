@@ -55,8 +55,14 @@ jobs:
             artifact_name: shario-darwin-amd64
             asset_name: shario-darwin-amd64
             
-          # FreeBSD builds - REMOVED: Fyne requires CGO and OpenGL, incompatible with FreeBSD cross-compilation
-          # GUI applications with CGO dependencies cannot be cross-compiled to FreeBSD
+          # FreeBSD builds - attempting with CGO disabled (may have limited functionality)
+          - os: ubuntu-latest
+            goos: freebsd
+            goarch: amd64
+            artifact_name: shario-freebsd-amd64
+            asset_name: shario-freebsd-amd64
+            cross_compile: true
+            cgo_disabled: true
 
     steps:
       - name: Checkout code
@@ -132,6 +138,12 @@ jobs:
           if [[ "${{ matrix.cross_compile }}" == "true" ]]; then
             echo "Cross-compiling for $GOOS/$GOARCH with CGO disabled"
             export CGO_ENABLED=0
+            
+            # Special handling for FreeBSD - try alternative build tags
+            if [[ "${{ matrix.goos }}" == "freebsd" ]]; then
+              echo "FreeBSD build - attempting with build tags for headless operation"
+              export BUILD_TAGS="-tags headless"
+            fi
           else
             echo "Native compilation for $GOOS/$GOARCH with CGO enabled"
             export CGO_ENABLED=1
@@ -157,6 +169,7 @@ jobs:
           # Build with optimizations (similar to Tala but with CGO handling)
           go build -v \
             -trimpath \
+            $BUILD_TAGS \
             -ldflags="-s -w -X main.version=${{ steps.version.outputs.VERSION }}" \
             -o ${{ matrix.artifact_name }} \
             .
@@ -544,6 +557,9 @@ jobs:
           ### macOS
           - **macOS (Intel)**: \`shario-darwin-amd64-$VERSION.tar.gz\`
           - **macOS (Apple Silicon)**: \`shario-darwin-arm64-$VERSION.tar.gz\`
+          
+          ### FreeBSD
+          - **FreeBSD (x64)**: \`shario-freebsd-amd64-$VERSION.tar.gz\` (headless mode)
           
           ## Installation
           

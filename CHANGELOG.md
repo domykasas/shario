@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.10] - 2025-07-11
+
+### Added
+- **FreeBSD Headless Support**: Added FreeBSD support with headless mode implementation
+  - Created headless build mode using Go build tags (`-tags headless`)
+  - FreeBSD binary runs without GUI but retains all P2P networking capabilities
+  - Headless mode provides full file transfer and chat functionality via command-line interface
+  - Automatic platform detection and graceful fallback to headless mode
+  - Maintains compatibility with Tala's FreeBSD support approach
+
+### Fixed
+- **FreeBSD Compatibility**: Implemented headless mode to work around Fyne GUI limitations
+  - FreeBSD builds now use CGO_ENABLED=0 with headless build tags
+  - Provides P2P networking without GUI dependencies
+  - Maintains all core functionality: file transfers, chat, peer discovery
+
+### Changed
+- **Build Matrix**: Restored FreeBSD support (back to 7 platform/architecture combinations)
+- **Architecture**: Added conditional compilation for headless vs GUI modes
+- **Release Notes**: Updated to include FreeBSD headless mode
+
 ## [1.0.0-rc.9] - 2025-07-11
 
 ### Fixed

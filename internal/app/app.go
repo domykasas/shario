@@ -126,6 +126,51 @@ func (a *App) Run() error {
 	return nil
 }
 
+// RunHeadless starts the application without GUI (for platforms without GUI support)
+func (a *App) RunHeadless() error {
+	a.mu.Lock()
+	if a.isRunning {
+		a.mu.Unlock()
+		return fmt.Errorf("application is already running")
+	}
+	a.isRunning = true
+	a.mu.Unlock()
+
+	log.Println("Starting Shario in headless mode...")
+
+	// Start all managers except UI
+	a.wg.Add(1)
+	go func() {
+		defer a.wg.Done()
+		if err := a.network.Start(); err != nil {
+			log.Printf("Network manager error: %v", err)
+		}
+	}()
+
+	a.wg.Add(1)
+	go func() {
+		defer a.wg.Done()
+		if err := a.chat.Start(); err != nil {
+			log.Printf("Chat manager error: %v", err)
+		}
+	}()
+
+	a.wg.Add(1)
+	go func() {
+		defer a.wg.Done()
+		if err := a.transfer.Start(); err != nil {
+			log.Printf("Transfer manager error: %v", err)
+		}
+	}()
+
+	log.Printf("Shario headless mode started successfully")
+	log.Printf("Identity: %s", a.identity.GetNickname())
+	log.Printf("Peer ID: %s", a.identity.GetPeerID())
+	log.Printf("Listening for peers...")
+
+	return nil
+}
+
 // Shutdown gracefully stops the application
 func (a *App) Shutdown() {
 	a.mu.Lock()
