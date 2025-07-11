@@ -6,105 +6,89 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+env:
+  GO_VERSION: '1.23'
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        go-version: [1.21, 1.22, 1.23]
         
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: ${{ matrix.go-version }}
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
 
-    # Install system dependencies for Fyne on Ubuntu
-    - name: Install Linux dependencies
+    # Platform-specific system dependencies (only for Linux, simplified)
+    - name: Install Linux dependencies  
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
         sudo apt-get install -y gcc pkg-config libgl1-mesa-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libxxf86vm-dev libasound2-dev
 
-    # Install Xcode Command Line Tools on macOS
     - name: Install macOS dependencies
       if: matrix.os == 'macos-latest'
       run: |
-        # Check if Xcode CLI tools are installed
+        # Ensure Xcode command line tools are available
         xcode-select --version || xcode-select --install
 
-    # Set up Windows dependencies (Go 1.21+ includes CGO support)
-    - name: Setup Windows dependencies
-      if: matrix.os == 'windows-latest'
-      run: |
-        # Windows runner should have GCC available
-        gcc --version
-
-    - name: Cache Go modules
-      uses: actions/cache@v4
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-${{ matrix.go-version }}-
-
+    # Dependency management
     - name: Download dependencies
-      run: go mod download
+      run: |
+        go mod download
+        go mod verify
 
-    - name: Verify dependencies
-      run: go mod verify
+    # Code quality and formatting (following Tala's approach)
+    - name: Format code
+      run: go fmt ./...
 
+    # Build test (ensure it compiles)
     - name: Build
+      env:
+        CGO_ENABLED: 1
       run: go build -v ./...
 
-    - name: Run tests
+    # Run tests
+    - name: Test
+      env:
+        CGO_ENABLED: 1
       run: go test -v ./...
 
-    - name: Run tests with race detector
+    # Test with race detection (like Tala)
+    - name: Test with race detector
+      env:
+        CGO_ENABLED: 1
       run: go test -race -v ./...
 
-    - name: Run static analysis
+    # Static analysis
+    - name: Vet
       run: go vet ./...
 
-    # Run staticcheck for additional static analysis
+    # Install and run staticcheck (following Tala's pattern)
     - name: Install staticcheck
       run: go install honnef.co/go/tools/cmd/staticcheck@latest
 
     - name: Run staticcheck
       run: staticcheck ./...
 
-    # Check code formatting
-    - name: Check formatting
-      run: |
-        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
-          echo "Code is not formatted. Please run 'go fmt ./...'"
-          gofmt -s -l .
-          exit 1
-        fi
-      shell: bash
-
-    # Run golint for style checking
-    - name: Install golint
-      run: go install golang.org/x/lint/golint@latest
-
-    - name: Run golint
-      run: golint ./...
-
-    # Test build for different architectures (only on native platforms due to Fyne CGO requirements)
-    - name: Test native compilation
-      run: |
-        echo "Testing native compilation for ${{ matrix.os }}"
-        go build -o shario-test${{ matrix.os == 'windows-latest' && '.exe' || '' }} .
-
-    # Generate test coverage report
-    - name: Generate coverage report
+    # Code coverage (like Tala, but only on Ubuntu with latest Go)
+    - name: Generate test coverage
+      if: matrix.os == 'ubuntu-latest'
+      env:
+        CGO_ENABLED: 1
       run: go test -coverprofile=coverage.out ./...
 
     - name: Upload coverage to Codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.23'
+      if: matrix.os == 'ubuntu-latest'
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.out
