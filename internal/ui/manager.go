@@ -4,6 +4,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"image/color"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,9 +17,11 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
@@ -51,6 +54,58 @@ type Manager struct {
 	// Current state
 	currentRoom   *chat.Room
 	refreshTicker *time.Ticker
+}
+
+// Color constants for better UX
+var (
+	successColor = color.RGBA{R: 46, G: 125, B: 50, A: 255}   // Green for success
+	errorColor   = color.RGBA{R: 211, G: 47, B: 47, A: 255}   // Red for errors
+	warningColor = color.RGBA{R: 255, G: 152, B: 0, A: 255}   // Orange for warnings
+	infoColor    = color.RGBA{R: 33, G: 150, B: 243, A: 255}  // Blue for info
+	primaryColor = color.RGBA{R: 103, G: 58, B: 183, A: 255}  // Purple for primary
+)
+
+// createColoredLabel creates a label with the specified color
+func createColoredLabel(text string, textColor color.Color) *canvas.Text {
+	label := canvas.NewText(text, textColor)
+	label.TextSize = theme.TextSize()
+	return label
+}
+
+// createStatusLabel creates a status label with appropriate color
+func createStatusLabel(text string, status string) *canvas.Text {
+	var textColor color.Color
+	switch status {
+	case "success", "completed", "connected":
+		textColor = successColor
+	case "error", "failed", "disconnected":
+		textColor = errorColor
+	case "warning", "pending", "connecting":
+		textColor = warningColor
+	case "info", "active":
+		textColor = infoColor
+	default:
+		textColor = theme.ForegroundColor()
+	}
+	return createColoredLabel(text, textColor)
+}
+
+// updateStatus updates the main status label with colored text
+func (m *Manager) updateStatus(text string, status string) {
+	if m.statusLabel != nil {
+		m.statusLabel.SetText(text)
+		switch status {
+		case "success", "completed", "connected":
+			m.statusLabel.TextStyle = fyne.TextStyle{Bold: true}
+		case "error", "failed", "disconnected":
+			m.statusLabel.TextStyle = fyne.TextStyle{Bold: true, Italic: true}
+		case "warning", "pending", "connecting":
+			m.statusLabel.TextStyle = fyne.TextStyle{Italic: true}
+		default:
+			m.statusLabel.TextStyle = fyne.TextStyle{}
+		}
+		m.statusLabel.Refresh()
+	}
 }
 
 // New creates a new UI manager
@@ -196,7 +251,7 @@ func (m *Manager) createUserInfoSection() *fyne.Container {
 	peerIDLabel := widget.NewLabel(fmt.Sprintf("ID: %s", m.identity.GetPeerID().String()))
 
 	return container.NewVBox(
-		widget.NewCard("Your Identity", "",
+		widget.NewCard("🎭 Your Identity", "",
 			container.NewVBox(
 				widget.NewLabel("Nickname:"),
 				container.NewBorder(
@@ -277,8 +332,12 @@ func (m *Manager) createPeersTab() *fyne.Container {
 		}
 	}()
 
+	// Create colored header
+	peersHeaderText := createColoredLabel("👥 Connected Peers", primaryColor)
+	peersHeaderText.TextStyle = fyne.TextStyle{Bold: true}
+	
 	return container.NewVBox(
-		widget.NewLabel("Connected Peers"),
+		peersHeaderText,
 		peerCountLabel,
 		hostInfoLabel,
 		widget.NewSeparator(),
@@ -322,7 +381,22 @@ func (m *Manager) createTransfersTab() *fyne.Container {
 				openBtn := hbox.Objects[1].(*widget.Button)
 
 				nameLabel.SetText(parts[0])
-				statusLabel.SetText(parts[1])
+				
+				// Set colored status text
+				status := parts[1]
+				statusLabel.SetText(status)
+				switch status {
+				case "completed":
+					statusLabel.TextStyle = fyne.TextStyle{Bold: true}
+					// Note: Fyne doesn't support setting label colors directly, 
+					// but we can use importance styling
+				case "failed", "cancelled":
+					statusLabel.TextStyle = fyne.TextStyle{Bold: true}
+				case "active":
+					statusLabel.TextStyle = fyne.TextStyle{Italic: true}
+				case "pending":
+					statusLabel.TextStyle = fyne.TextStyle{}
+				}
 
 				// Parse progress
 				var progress float64
@@ -345,8 +419,12 @@ func (m *Manager) createTransfersTab() *fyne.Container {
 		},
 	)
 
+	// Create colored header
+	headerText := createColoredLabel("📁 File Transfers", primaryColor)
+	headerText.TextStyle = fyne.TextStyle{Bold: true}
+	
 	return container.NewVBox(
-		widget.NewLabel("File Transfers"),
+		headerText,
 		widget.NewSeparator(),
 		m.transfersList,
 	)
@@ -399,8 +477,12 @@ func (m *Manager) createChatTab() *fyne.Container {
 	globalChatInfo := widget.NewLabel("Global chat connects all Shario users automatically")
 	globalChatInfo.Wrapping = fyne.TextWrapWord
 
+	// Create colored header
+	chatHeaderText := createColoredLabel("💬 Chat Rooms", primaryColor)
+	chatHeaderText.TextStyle = fyne.TextStyle{Bold: true}
+	
 	return container.NewVBox(
-		widget.NewLabel("Chat Rooms"),
+		chatHeaderText,
 		globalChatInfo,
 		widget.NewSeparator(),
 		m.chatRoomsList,
@@ -485,12 +567,19 @@ func (m *Manager) createMainContentArea() *fyne.Container {
 // createStatusBar creates the status bar
 func (m *Manager) createStatusBar() *fyne.Container {
 	m.statusLabel = widget.NewLabel("Ready")
+	m.statusLabel.TextStyle = fyne.TextStyle{Bold: true}
+	
+	// Create colored status indicators
+	statusText := createStatusLabel("Ready", "success")
+	peersText := createColoredLabel("Peers: 0", infoColor)
+	transfersText := createColoredLabel("Transfers: 0", infoColor)
+	
 	return container.NewHBox(
-		m.statusLabel,
+		statusText,
 		widget.NewSeparator(),
-		widget.NewLabel("Peers: 0"),
+		peersText,
 		widget.NewSeparator(),
-		widget.NewLabel("Transfers: 0"),
+		transfersText,
 	)
 }
 
@@ -566,7 +655,7 @@ func (m *Manager) refreshLoop() {
 		m.refreshPeers()
 		m.refreshTransfers()
 		m.refreshChatRooms()
-		m.updateStatus()
+		m.updateStatusCounts()
 	}
 }
 
@@ -589,8 +678,25 @@ func (m *Manager) refreshTransfers() {
 	var transferStrings []string
 
 	for _, transfer := range transfers {
-		transferString := fmt.Sprintf("%s|%s|%.1f|%s",
-			transfer.Filename, transfer.Status, transfer.Progress, transfer.ID)
+		// Add emoji based on status
+		var statusEmoji string
+		switch transfer.Status {
+		case "completed":
+			statusEmoji = "✅"
+		case "failed":
+			statusEmoji = "❌"
+		case "cancelled":
+			statusEmoji = "🚫"
+		case "active":
+			statusEmoji = "🔄"
+		case "pending":
+			statusEmoji = "⏳"
+		default:
+			statusEmoji = "📄"
+		}
+		
+		transferString := fmt.Sprintf("%s|%s %s|%.1f|%s",
+			transfer.Filename, statusEmoji, transfer.Status, transfer.Progress, transfer.ID)
 		transferStrings = append(transferStrings, transferString)
 	}
 
@@ -635,8 +741,8 @@ func (m *Manager) refreshMessages() {
 	m.messagesData.Set(messageStrings)
 }
 
-// updateStatus updates the status bar
-func (m *Manager) updateStatus() {
+// updateStatusCounts updates the status bar with peer and transfer counts
+func (m *Manager) updateStatusCounts() {
 	peerCount := m.network.GetPeerCount()
 	transferCount := m.transfer.GetActiveTransfers()
 

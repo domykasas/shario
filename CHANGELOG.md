@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2025-07-11
+
+### Added
+- **UI/UX Improvements**: Enhanced visual feedback with colored text and emojis
+  - Added color constants for success, error, warning, info, and primary states
+  - Colored section headers with emojis: 👥 Connected Peers, 📁 File Transfers, 💬 Chat Rooms
+  - Transfer status indicators with emojis: ✅ completed, ❌ failed, 🚫 cancelled, 🔄 active, ⏳ pending
+  - Enhanced status bar with colored text indicators
+  - Added styled text for different transfer states (bold for completed/failed, italic for active)
+  - Improved visual hierarchy with colored headers and better typography
+  - Updated identity section with emoji: 🎭 Your Identity
+
+### Changed
+- **UI Typography**: Enhanced text styling for better visual feedback
+  - Status labels now use different text styles (bold, italic) for different states
+  - Section headers use colored text with emojis for better visual organization
+  - Transfer status display includes emoji indicators for quick visual recognition
+
 ## [1.0.4] - 2025-07-11
 
 ### Added

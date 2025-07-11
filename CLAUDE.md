@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 **Shario** - Cross-platform P2P file-sharing application with real-time chat
-- **Current Version**: 1.0.4 (Stable Release - 2025-07-11)
+- **Current Version**: 1.0.5 (Stable Release - 2025-07-11)
 - **Language**: Go 1.20+
 - **GUI**: Fyne framework
 - **Networking**: libp2p (mDNS + DHT discovery)
@@ -243,7 +243,21 @@ CGO conflicts with GUI frameworks
 
 ### Quality Standards
 - **All changes** must update CHANGELOG.md
-- **Version consistency** across all documentation files
+- **ALWAYS bump version** for ANY changes (even documentation improvements)
+- **Version consistency** across all documentation files (CLAUDE.md, README.md, CHANGELOG.md)
 - **Professional git commits** with clear, technical messages
 - **No Claude attribution** in git commits (user preference)
 - **Human controls git push** - wait for explicit request
+
+### Critical Version Management Rule
+🚨 **NEVER FORGET**: Every commit must include a version bump, no exceptions:
+- Documentation changes: PATCH version (1.0.3 → 1.0.4)
+- Bug fixes: PATCH version (1.0.3 → 1.0.4)
+- New features: MINOR version (1.0.3 → 1.1.0)
+- Breaking changes: MAJOR version (1.0.3 → 2.0.0)
+
+**Files to update for every version bump:**
+1. `CLAUDE.md` - Current Version line
+2. `README.md` - Version badge AND Current Status section
+3. `CHANGELOG.md` - Add new version section with changes
+4. Git tag: `git tag v1.0.X`

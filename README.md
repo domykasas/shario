@@ -1,6 +1,6 @@
 # Shario - P2P File Sharing Application
 
-[![Version](https://img.shields.io/badge/version-1.0.4-blue.svg)](https://github.com/domykasas/shario/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.0.5-blue.svg)](https://github.com/domykasas/shario/releases/latest)
 [![Go](https://img.shields.io/badge/Go-1.20+-00ADD8.svg)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/domykasas/shario?tab=MIT-1-ov-file#MIT-1-ov-file)
 
@@ -236,7 +236,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 ## Current Status
 
-**✅ FULLY FUNCTIONAL** - Version 1.0.4 with comprehensive package ecosystem:
+**✅ FULLY FUNCTIONAL** - Version 1.0.5 with comprehensive package ecosystem:
 - ✅ P2P file transfers with chunked streaming and progress tracking
 - ✅ Real-time chat with nickname synchronization across peers
 - ✅ Automatic peer discovery (mDNS local + DHT internet-wide)
