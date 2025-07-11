@@ -114,6 +114,91 @@ peersData, transfersData, messagesData binding.StringList
 - **Run**: `go run .`
 - **Debug**: `go run . 2>&1 | grep -E "(🎭|📁|🎯|🗂️|📥|📤)"`
 
+## 🚀 GitHub Actions Workflow Configuration
+
+### **Release Asset Naming Convention**
+Following **Tala's format exactly**: `shario-v{version}-{platform}-{arch}[-headless]`
+
+**Examples:**
+- GUI builds: `shario-v1.0.0-rc.18-linux-amd64`, `shario-v1.0.0-rc.18-windows-x64.exe`
+- Headless builds: `shario-v1.0.0-rc.18-linux-arm64-headless`, `shario-v1.0.0-rc.18-freebsd-x64-headless`
+
+### **Build Matrix Configuration**
+```yaml
+matrix:
+  include:
+    # GUI builds (native compilation with CGO/Fyne)
+    - Linux x64: ubuntu-latest, CGO enabled, create_packages: true
+    - Windows x64: windows-latest, CGO enabled, create_installer: true
+    - macOS Intel: macos-13, CGO enabled, create_dmg: true
+    - macOS ARM64: macos-latest, CGO enabled, create_dmg: true
+    
+    # Headless builds (cross-compilation, CGO disabled)
+    - Linux ARM64: ubuntu-latest, cross_compile: true, headless_mode: true
+    - Windows ARM64: windows-latest, cross_compile: true, headless_mode: true
+    - FreeBSD x64: ubuntu-latest, cross_compile: true, headless_mode: true
+```
+
+### **Package Formats Generated**
+**Linux (GUI x64):**
+- Binary: `shario-v{version}-linux-amd64`
+- DEB: `shario-v{version}-linux-amd64.deb`
+- RPM: `shario-v{version}-linux-x86_64.rpm`
+- Snap: `shario-v{version}-linux-amd64.snap`
+- AppImage: `shario-v{version}-linux-x86_64.AppImage`
+- Archive: `shario-v{version}-linux-x64.tar.xz`
+
+**Windows (GUI x64):**
+- Executable: `shario-v{version}-windows-x64.exe`
+- Squirrel: `shario-v{version}-squirrel.zip`
+
+**macOS (GUI Intel/ARM64):**
+- DMG: `shario-v{version}-macos.dmg`
+- Binaries: `shario-v{version}-macos-amd64`, `shario-v{version}-macos-arm64`
+
+**Headless builds:**
+- Linux ARM64: `shario-v{version}-linux-arm64-headless`
+- Windows ARM64: `shario-v{version}-windows-arm64-headless.exe`
+- FreeBSD x64: `shario-v{version}-freebsd-x64-headless`
+
+### **Critical Naming Rules**
+1. **ALWAYS include "headless" suffix** for builds without GUI (ARM64, FreeBSD)
+2. **Use "x64" not "amd64"** for Windows and archive formats (matching Tala)
+3. **Use "amd64" for Linux** binary and package formats (matching Tala)
+4. **Version format**: `v{MAJOR}.{MINOR}.{PATCH}-rc.{N}` (with 'v' prefix)
+
+### **Windows Build Optimizations**
+- **Build caching**: `~\AppData\Local\go-build`, `~\go\pkg\mod`
+- **Parallel compilation**: `GOMAXPROCS=0`
+- **Build flags**: `-H windowsgui -buildmode=exe` for GUI builds
+- **Timeout**: 30 minutes for Windows builds (vs 60 for others)
+
+### **⚠️ Common Mistakes to Avoid**
+1. **Missing headless indicators**: ARM64 and FreeBSD builds MUST include "headless" in filename
+2. **Inconsistent architecture naming**: Windows/archives use "x64", Linux packages use "amd64"
+3. **Wrong asset naming**: Remove `.exe` from `asset_name` to prevent double extensions in archives
+4. **Missing package conditions**: Use `create_packages`, `create_installer`, `create_dmg` flags properly
+5. **Version format inconsistency**: Always use `v{version}` format in filenames, not `{version}`
+
+### **🔧 Workflow Troubleshooting**
+**Common Build Failures:**
+- **RPM build errors**: Version mismatch between tarball directory and RPM spec
+  - Fix: Use `$RPM_VERSION` consistently for both tarball and spec file
+- **Snap build failures**: Binary organization issues in snapcraft.yaml
+  - Fix: Use exact binary name in `organize` section, not wildcards
+- **Windows build timeouts**: Large binary size with GUI dependencies
+  - Fix: Use build caching, parallel compilation, reduce timeout to 30min
+- **macOS DMG creation**: Requires native macOS runner for hdiutil
+  - Fix: Use `macos-latest` for ARM64, `macos-13` for Intel
+- **Cross-compilation issues**: CGO conflicts with GUI frameworks
+  - Fix: Use `headless_mode: true` with `CGO_ENABLED=0` for ARM64/FreeBSD
+
+**Workflow Monitoring:**
+- Check build times: Windows GUI builds typically take 8-15 minutes
+- Monitor cache hit rates: Should see significant speedup on subsequent builds
+- Verify all package formats are created: Linux should generate 6+ formats
+- Ensure release notes table format matches Tala's structure exactly
+
 ## 🚨 CRITICAL WORKFLOW REMINDERS
 
 ### 📝 CHANGELOG.md Updates
