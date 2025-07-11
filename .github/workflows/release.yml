@@ -16,71 +16,59 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Linux builds - native compilation for CGO/Fyne
+          # Linux builds - following Tala's naming convention
           - os: ubuntu-latest
             goos: linux
             goarch: amd64
             artifact_name: shario-linux-amd64
             asset_name: shario-linux-amd64
+            create_packages: true
           
           - os: ubuntu-latest
             goos: linux
             goarch: arm64
-            artifact_name: shario-linux-arm64-headless
-            asset_name: shario-linux-arm64-headless
+            artifact_name: shario-linux-arm64
+            asset_name: shario-linux-arm64
             cross_compile: true
             headless_mode: true
           
-          # Windows builds - native compilation for CGO/Fyne  
+          # Windows builds - following Tala's naming convention
           - os: windows-latest
             goos: windows
             goarch: amd64
-            artifact_name: shario-windows-amd64.exe
-            asset_name: shario-windows-amd64
+            artifact_name: shario-windows-x64.exe
+            asset_name: shario-windows-x64
+            create_installer: true
             
           - os: windows-latest
             goos: windows
             goarch: arm64
-            artifact_name: shario-windows-arm64-headless.exe
-            asset_name: shario-windows-arm64-headless
+            artifact_name: shario-windows-arm64.exe
+            asset_name: shario-windows-arm64
             cross_compile: true
             headless_mode: true
             
-          # Additional Windows variants for better naming
-          - os: windows-latest
-            goos: windows
-            goarch: amd64
-            artifact_name: shario-windows-headless.exe
-            asset_name: shario-windows-headless
-            cross_compile: true
-            headless_mode: true
-            
-          - os: windows-latest
-            goos: windows
-            goarch: amd64
-            artifact_name: shario-windows.exe
-            asset_name: shario-windows
-            gui_variant: true
-            
-          # macOS builds - native compilation for CGO/Fyne
+          # macOS builds - following Tala's naming convention
           - os: macos-latest
             goos: darwin
             goarch: arm64
-            artifact_name: shario-darwin-arm64
-            asset_name: shario-darwin-arm64
+            artifact_name: shario-macos-arm64
+            asset_name: shario-macos-arm64
+            create_dmg: true
             
           - os: macos-13  # Intel runner for amd64
             goos: darwin
             goarch: amd64
-            artifact_name: shario-darwin-amd64
-            asset_name: shario-darwin-amd64
+            artifact_name: shario-macos-amd64
+            asset_name: shario-macos-amd64
+            create_dmg: true
             
-          # FreeBSD builds - attempting with CGO disabled (may have limited functionality)
+          # FreeBSD builds - following Tala's naming convention
           - os: ubuntu-latest
             goos: freebsd
             goarch: amd64
-            artifact_name: shario-freebsd-amd64-headless
-            asset_name: shario-freebsd-amd64-headless
+            artifact_name: shario-freebsd-x64
+            asset_name: shario-freebsd-x64
             cross_compile: true
             headless_mode: true
 
@@ -223,7 +211,7 @@ jobs:
 
       # Create Snap package (only for Linux AMD64)
       - name: Create Snap package
-        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64' && matrix.create_packages
         shell: bash
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
@@ -257,7 +245,7 @@ jobs:
 
       # Create DEB package (only for Linux AMD64)
       - name: Create DEB package
-        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64' && matrix.create_packages
         shell: bash
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
@@ -301,13 +289,13 @@ jobs:
            without the need for central servers.
           EOF
           
-          # Build DEB package
-          dpkg-deb --build shario-deb "shario-$CLEAN_VERSION-linux-amd64.deb"
+          # Build DEB package with Tala naming convention
+          dpkg-deb --build shario-deb "shario-$VERSION-linux-amd64.deb"
           
-          if [[ -f "shario-$CLEAN_VERSION-linux-amd64.deb" ]]; then
-            echo "✅ DEB package created successfully: shario-$CLEAN_VERSION-linux-amd64.deb"
+          if [[ -f "shario-$VERSION-linux-amd64.deb" ]]; then
+            echo "✅ DEB package created successfully: shario-$VERSION-linux-amd64.deb"
             echo "DEB_CREATED=true" >> $GITHUB_ENV
-            echo "DEB_FILE=shario-$CLEAN_VERSION-linux-amd64.deb" >> $GITHUB_ENV
+            echo "DEB_FILE=shario-$VERSION-linux-amd64.deb" >> $GITHUB_ENV
           else
             echo "❌ DEB package creation failed"
             echo "DEB_CREATED=false" >> $GITHUB_ENV
@@ -315,7 +303,7 @@ jobs:
 
       # Create RPM package (only for Linux AMD64)
       - name: Create RPM package
-        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64' && matrix.create_packages
         shell: bash
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
@@ -383,10 +371,10 @@ jobs:
           rpmbuild -ba ~/rpmbuild/SPECS/shario.spec
           
           if [[ -f ~/rpmbuild/RPMS/x86_64/shario-$RPM_VERSION-1.x86_64.rpm ]]; then
-            cp ~/rpmbuild/RPMS/x86_64/shario-$RPM_VERSION-1.x86_64.rpm "shario-$CLEAN_VERSION-linux-x86_64.rpm"
-            echo "✅ RPM package created successfully: shario-$CLEAN_VERSION-linux-x86_64.rpm"
+            cp ~/rpmbuild/RPMS/x86_64/shario-$RPM_VERSION-1.x86_64.rpm "shario-$VERSION-linux-x86_64.rpm"
+            echo "✅ RPM package created successfully: shario-$VERSION-linux-x86_64.rpm"
             echo "RPM_CREATED=true" >> $GITHUB_ENV
-            echo "RPM_FILE=shario-$CLEAN_VERSION-linux-x86_64.rpm" >> $GITHUB_ENV
+            echo "RPM_FILE=shario-$VERSION-linux-x86_64.rpm" >> $GITHUB_ENV
           else
             echo "❌ RPM package creation failed"
             echo "RPM_CREATED=false" >> $GITHUB_ENV
@@ -394,7 +382,7 @@ jobs:
 
       # Create AppImage package (only for Linux AMD64)
       - name: Create AppImage package
-        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        if: matrix.os == 'ubuntu-latest' && matrix.goos == 'linux' && matrix.goarch == 'amd64' && matrix.create_packages
         shell: bash
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
@@ -442,12 +430,12 @@ jobs:
           </svg>
           EOF
           
-          # Try to create AppImage
+          # Try to create AppImage with Tala naming convention
           if [[ -f /tmp/appimagetool ]]; then
-            if /tmp/appimagetool Shario.AppDir "shario-$CLEAN_VERSION-linux-x86_64.AppImage" 2>/dev/null; then
-              echo "✅ AppImage created successfully: shario-$CLEAN_VERSION-linux-x86_64.AppImage"
+            if /tmp/appimagetool Shario.AppDir "shario-$VERSION-linux-x86_64.AppImage" 2>/dev/null; then
+              echo "✅ AppImage created successfully: shario-$VERSION-linux-x86_64.AppImage"
               echo "APPIMAGE_CREATED=true" >> $GITHUB_ENV
-              echo "APPIMAGE_FILE=shario-$CLEAN_VERSION-linux-x86_64.AppImage" >> $GITHUB_ENV
+              echo "APPIMAGE_FILE=shario-$VERSION-linux-x86_64.AppImage" >> $GITHUB_ENV
             else
               echo "❌ AppImage creation failed"
               echo "APPIMAGE_CREATED=false" >> $GITHUB_ENV
@@ -457,32 +445,42 @@ jobs:
             echo "APPIMAGE_CREATED=false" >> $GITHUB_ENV
           fi
 
-      # Create platform-specific archives (following Tala's approach)
-      - name: Create archive
+      # Create platform-specific archives and binaries (following Tala's approach)
+      - name: Create archive and binary
         shell: bash
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
           
           if [[ "${{ matrix.goos }}" == "windows" ]]; then
-            # Windows: create zip and individual binary
-            if command -v powershell &> /dev/null; then
-              powershell -command "Compress-Archive -Path '${{ matrix.artifact_name }}' -DestinationPath '${{ matrix.asset_name }}-$VERSION.zip'"
-            else
-              zip "${{ matrix.asset_name }}-$VERSION.zip" "${{ matrix.artifact_name }}"
+            # Windows: create binary with Tala naming
+            cp "${{ matrix.artifact_name }}" "${{ matrix.asset_name }}-$VERSION.exe"
+            echo "BINARY_PATH=${{ matrix.asset_name }}-$VERSION.exe" >> $GITHUB_ENV
+            
+            # Create Squirrel package if this is the installer variant
+            if [[ "${{ matrix.create_installer }}" == "true" ]]; then
+              mkdir -p squirrel
+              cp "${{ matrix.artifact_name }}" squirrel/
+              cp README.md CHANGELOG.md squirrel/ 2>/dev/null || true
+              cd squirrel
+              zip -r "../shario-$VERSION-squirrel.zip" .
+              cd ..
+              echo "SQUIRREL_PATH=shario-$VERSION-squirrel.zip" >> $GITHUB_ENV
             fi
             
-            # Also create a versioned binary file for direct download
-            cp "${{ matrix.artifact_name }}" "${{ matrix.asset_name }}-$VERSION.exe"
+          elif [[ "${{ matrix.goos }}" == "linux" ]]; then
+            # Linux: create binary and XZ archive (following Tala's format)
+            cp "${{ matrix.artifact_name }}" "${{ matrix.asset_name }}-$VERSION"
             
-            echo "ASSET_PATH=${{ matrix.asset_name }}-$VERSION.zip" >> $GITHUB_ENV
-            echo "BINARY_PATH=${{ matrix.asset_name }}-$VERSION.exe" >> $GITHUB_ENV
-          else
-            # Unix: create tar.gz
-            tar -czf "${{ matrix.asset_name }}-$VERSION.tar.gz" "${{ matrix.artifact_name }}"
-            echo "ASSET_PATH=${{ matrix.asset_name }}-$VERSION.tar.gz" >> $GITHUB_ENV
+            # Create XZ archive for Linux x64
+            if [[ "${{ matrix.goarch }}" == "amd64" ]]; then
+              tar -cJf "${{ matrix.asset_name }}-$VERSION-x64.tar.xz" "${{ matrix.artifact_name }}"
+              echo "XZ_ARCHIVE_PATH=${{ matrix.asset_name }}-$VERSION-x64.tar.xz" >> $GITHUB_ENV
+            fi
+            
+            echo "BINARY_PATH=${{ matrix.asset_name }}-$VERSION" >> $GITHUB_ENV
             
             # For Linux AMD64, also prepare additional packages if they were created
-            if [[ "${{ matrix.goos }}" == "linux" && "${{ matrix.goarch }}" == "amd64" ]]; then
+            if [[ "${{ matrix.goarch }}" == "amd64" && "${{ matrix.create_packages }}" == "true" ]]; then
               if [[ "${{ env.SNAP_CREATED }}" == "true" ]]; then
                 echo "SNAP_ASSET_PATH=${{ env.SNAP_FILE }}" >> $GITHUB_ENV
                 echo "Including Snap package in assets: ${{ env.SNAP_FILE }}"
@@ -500,23 +498,67 @@ jobs:
                 echo "Including AppImage package in assets: ${{ env.APPIMAGE_FILE }}"
               fi
             fi
+            
+          elif [[ "${{ matrix.goos }}" == "darwin" ]]; then
+            # macOS: create binary
+            cp "${{ matrix.artifact_name }}" "${{ matrix.asset_name }}-$VERSION"
+            echo "BINARY_PATH=${{ matrix.asset_name }}-$VERSION" >> $GITHUB_ENV
+            
+            # Create DMG if specified
+            if [[ "${{ matrix.create_dmg }}" == "true" ]]; then
+              mkdir -p dmg
+              cp "${{ matrix.artifact_name }}" dmg/Shario
+              
+              # Create DMG with Tala naming
+              if [[ "${{ matrix.goarch }}" == "arm64" ]]; then
+                hdiutil create -volname "Shario" -srcfolder dmg -ov -format UDZO "shario-$VERSION-macos.dmg"
+                echo "DMG_PATH=shario-$VERSION-macos.dmg" >> $GITHUB_ENV
+              else
+                hdiutil create -volname "Shario" -srcfolder dmg -ov -format UDZO "shario-$VERSION-macos.dmg"
+                echo "DMG_PATH=shario-$VERSION-macos.dmg" >> $GITHUB_ENV
+              fi
+            fi
+            
+          else
+            # FreeBSD and other: create binary with Tala naming
+            cp "${{ matrix.artifact_name }}" "${{ matrix.asset_name }}-$VERSION"
+            echo "BINARY_PATH=${{ matrix.asset_name }}-$VERSION" >> $GITHUB_ENV
           fi
 
-      # Upload artifacts
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.asset_name }}-${{ steps.version.outputs.VERSION }}
-          path: ${{ env.ASSET_PATH }}
-          retention-days: 30
-
-      # Upload Windows binary files (only for Windows builds)
-      - name: Upload Windows binary
-        if: matrix.goos == 'windows' && env.BINARY_PATH != ''
+      # Upload binary files (all platforms)
+      - name: Upload binary
+        if: env.BINARY_PATH != ''
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset_name }}-binary-${{ steps.version.outputs.VERSION }}
           path: ${{ env.BINARY_PATH }}
+          retention-days: 30
+
+      # Upload Squirrel package (Windows installer builds)
+      - name: Upload Squirrel package
+        if: matrix.goos == 'windows' && env.SQUIRREL_PATH != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: shario-squirrel-${{ steps.version.outputs.VERSION }}
+          path: ${{ env.SQUIRREL_PATH }}
+          retention-days: 30
+
+      # Upload XZ archive (Linux x64)
+      - name: Upload XZ archive
+        if: matrix.goos == 'linux' && env.XZ_ARCHIVE_PATH != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: shario-linux-x64-archive-${{ steps.version.outputs.VERSION }}
+          path: ${{ env.XZ_ARCHIVE_PATH }}
+          retention-days: 30
+
+      # Upload DMG (macOS)
+      - name: Upload DMG
+        if: matrix.goos == 'darwin' && env.DMG_PATH != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: shario-macos-dmg-${{ steps.version.outputs.VERSION }}
+          path: ${{ env.DMG_PATH }}
           retention-days: 30
 
       # Upload Snap package (only for Linux AMD64 if created)
@@ -580,7 +622,7 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p release-assets
-          find artifacts -name "*.zip" -o -name "*.tar.gz" -o -name "*.exe" | xargs -I {} cp {} release-assets/
+          find artifacts -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.tar.xz" -o -name "*.exe" -o -name "*.deb" -o -name "*.rpm" -o -name "*.snap" -o -name "*.AppImage" -o -name "*.dmg" -o -name "shario-*" \) | xargs -I {} cp {} release-assets/
           ls -la release-assets/
 
       - name: Generate release notes
@@ -596,27 +638,35 @@ jobs:
           
           Choose the appropriate binary for your platform:
           
-          ### Windows
-          - **Windows (x64) Archive**: \`shario-windows-amd64-$VERSION.zip\` (GUI)
-          - **Windows (x64) Binary**: \`shario-windows-$VERSION.exe\` (GUI, direct download)
-          - **Windows (ARM64) Archive**: \`shario-windows-arm64-headless-$VERSION.zip\` (headless)
-          - **Windows Headless Archive**: \`shario-windows-headless-$VERSION.zip\` (headless)
-          - **Windows Headless Binary**: \`shario-windows-headless-$VERSION.exe\` (headless, direct download)
-          
           ### Linux
-          - **Binary (x64)**: \`shario-linux-amd64-$VERSION.tar.gz\` (GUI)
-          - **Binary (ARM64)**: \`shario-linux-arm64-headless-$VERSION.tar.gz\` (headless)
-          - **DEB Package**: \`shario-$VERSION-linux-amd64.deb\` (Debian/Ubuntu)
-          - **RPM Package**: \`shario-$VERSION-linux-x86_64.rpm\` (Red Hat/Fedora)
-          - **Snap Package**: \`shario-$VERSION-linux-amd64.snap\` (Universal Linux)
-          - **AppImage**: \`shario-$VERSION-linux-x86_64.AppImage\` (Portable Linux)
+          | Format | Description | Download |
+          |---------|-------------|----------|
+          | Binary | Standalone executable | \`shario-$VERSION-linux-amd64\` |
+          | DEB | Debian/Ubuntu package | \`shario-$VERSION-linux-amd64.deb\` |
+          | RPM | Red Hat/Fedora package | \`shario-$VERSION-linux-x86_64.rpm\` |
+          | Snap | Universal Linux package | \`shario-$VERSION-linux-amd64.snap\` |
+          | AppImage | Portable Linux package | \`shario-$VERSION-linux-x86_64.AppImage\` |
+          | Archive | Compressed archive | \`shario-$VERSION-linux-x64.tar.xz\` |
+          | ARM64 | ARM64 binary | \`shario-$VERSION-linux-arm64\` |
+          
+          ### Windows
+          | Format | Description | Download |
+          |---------|-------------|----------|
+          | Executable | Windows executable | \`shario-$VERSION-windows-x64.exe\` |
+          | Squirrel | Auto-updater package | \`shario-$VERSION-squirrel.zip\` |
+          | ARM64 | ARM64 executable | \`shario-$VERSION-windows-arm64.exe\` |
           
           ### macOS
-          - **macOS (Intel)**: \`shario-darwin-amd64-$VERSION.tar.gz\`
-          - **macOS (Apple Silicon)**: \`shario-darwin-arm64-$VERSION.tar.gz\`
+          | Format | Description | Download |
+          |---------|-------------|----------|
+          | DMG | macOS disk image | \`shario-$VERSION-macos.dmg\` |
+          | Intel | Intel binary | \`shario-$VERSION-macos-amd64\` |
+          | Apple Silicon | ARM64 binary | \`shario-$VERSION-macos-arm64\` |
           
           ### FreeBSD
-          - **FreeBSD (x64)**: \`shario-freebsd-amd64-headless-$VERSION.tar.gz\` (headless mode)
+          | Format | Description | Download |
+          |---------|-------------|----------|
+          | Binary | FreeBSD executable | \`shario-$VERSION-freebsd-x64\` |
           
           ## Installation
           

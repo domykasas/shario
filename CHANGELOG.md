@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.17] - 2025-07-11
+
+### Added
+- **Complete Package Ecosystem**: Added all package formats matching Tala's comprehensive approach
+  - **Windows**: Squirrel auto-updater package (shario-v1.0.0-rc.17-squirrel.zip)
+  - **macOS**: DMG disk image (shario-v1.0.0-rc.17-macos.dmg)
+  - **Linux**: XZ compressed archive (shario-v1.0.0-rc.17-linux-x64.tar.xz)
+  - **All Platforms**: Standalone binaries with consistent naming
+
+### Changed
+- **Release Asset Naming**: Standardized to match Tala's format exactly
+  - Linux: `shario-v1.0.0-rc.17-linux-amd64` (binary), `shario-v1.0.0-rc.17-linux-x64.tar.xz` (archive)
+  - Windows: `shario-v1.0.0-rc.17-windows-x64.exe`, `shario-v1.0.0-rc.17-squirrel.zip`
+  - macOS: `shario-v1.0.0-rc.17-macos.dmg`, `shario-v1.0.0-rc.17-macos-amd64/arm64`
+  - FreeBSD: `shario-v1.0.0-rc.17-freebsd-x64`
+- **Release Notes**: Updated to use Tala's table format for better organization
+- **Package Matrix**: Reorganized build matrix to match Tala's platform/architecture structure
+
+### Fixed
+- **Package Creation**: All Linux packages now use version-consistent naming
+- **Cross-Platform Builds**: Improved build configuration for all supported platforms
+
 ## [1.0.0-rc.16] - 2025-07-11
 
 ### Fixed
