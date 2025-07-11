@@ -55,13 +55,8 @@ jobs:
             artifact_name: shario-darwin-amd64
             asset_name: shario-darwin-amd64
             
-          # FreeBSD builds - cross-compilation (no native runners)
-          - os: ubuntu-latest
-            goos: freebsd
-            goarch: amd64
-            artifact_name: shario-freebsd-amd64
-            asset_name: shario-freebsd-amd64
-            cross_compile: true
+          # FreeBSD builds - REMOVED: Fyne requires CGO and OpenGL, incompatible with FreeBSD cross-compilation
+          # GUI applications with CGO dependencies cannot be cross-compiled to FreeBSD
 
     steps:
       - name: Checkout code
@@ -549,9 +544,6 @@ jobs:
           ### macOS
           - **macOS (Intel)**: \`shario-darwin-amd64-$VERSION.tar.gz\`
           - **macOS (Apple Silicon)**: \`shario-darwin-arm64-$VERSION.tar.gz\`
-          
-          ### FreeBSD
-          - **FreeBSD (x64)**: \`shario-freebsd-amd64-$VERSION.tar.gz\`
           
           ## Installation
           

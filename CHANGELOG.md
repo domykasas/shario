@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.9] - 2025-07-11
+
+### Fixed
+- **FreeBSD Compatibility**: Removed FreeBSD from build matrix due to Fyne GUI framework limitations
+  - Fyne requires CGO and OpenGL which are incompatible with FreeBSD cross-compilation
+  - GUI applications with CGO dependencies cannot be reliably cross-compiled to FreeBSD
+  - This is a fundamental limitation of GUI frameworks, not a Shario-specific issue
+
+### Changed
+- **Build Matrix**: Reduced from 7 to 6 platform/architecture combinations (removed FreeBSD)
+- **Release Notes**: Updated to reflect accurate platform support
+
 ## [1.0.0-rc.8] - 2025-07-11
 
 ### Added
