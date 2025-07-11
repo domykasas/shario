@@ -228,7 +228,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 ## Current Status
 
-**✅ FULLY FUNCTIONAL** - Version 1.0.0-rc.12 with comprehensive package ecosystem:
+**✅ FULLY FUNCTIONAL** - Version 1.0.0-rc.13 with comprehensive package ecosystem:
 - ✅ P2P file transfers with chunked streaming and progress tracking
 - ✅ Real-time chat with nickname synchronization across peers
 - ✅ Automatic peer discovery (mDNS local + DHT internet-wide)

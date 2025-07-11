@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.13] - 2025-07-11
+
+### Fixed
+- **Release Workflow**: Triggered new release to publish latest binaries
+  - Previous releases (rc.8-rc.12) failed during GitHub Actions workflow execution
+  - This release contains all fixes from rc.8 through rc.12
+  - Complete package ecosystem with proper headless build architecture
+
 ## [1.0.0-rc.12] - 2025-07-11
 
 ### Fixed
