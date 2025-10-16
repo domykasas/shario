@@ -256,4 +256,3 @@ This project is licensed under the MIT License. See the LICENSE file for details
 - [ ] Advanced peer discovery methods
 - [ ] File synchronization
 - [ ] Voice/video chat integration
-- [ ] Plugin system for extensions
