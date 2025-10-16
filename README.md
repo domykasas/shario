@@ -254,5 +254,4 @@ This project is licensed under the MIT License. See the LICENSE file for details
 - [ ] File sharing with multiple peers simultaneously  
 - [ ] Mobile app support
 - [ ] Advanced peer discovery methods
-- [ ] File synchronization
 - [ ] Voice/video chat integration
